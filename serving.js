@@ -164,15 +164,17 @@ app = _.extend(app,{
   {
    return function (req,res)
    {
-    app.models.mainpage.add({test:'shimon'});
+    //app.models.mainpage.add({test:'shimon'});
     app.serveRequest(req,res);
    }
   },
   
   serveRequest: function(req, res)
   {
-    app.urls[0][1][app.urls[0][2]](req, res);
-    //res.write("hendle request");
+    //app.urls[0][1][app.urls[0][2]](req, res);
+    res.writeHead(200, { 'Content-Type': 'text/plain'});
+    res.write("hendle request (req, res) ");
+    res.end();
         
     //this.writePixel(res);
 
