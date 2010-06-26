@@ -13,9 +13,9 @@ function add_model(app)
  app.models.mainpage               = _.clone(  app.basicmodel );
  app.models.mainpage.general.name  = 'mainpage';
  app.models.mainpage.fields.id     = _.extend( app.basicfields.id,{} );
- app.models.mainpage.fields.title  = _.extend( _.clone(app.basicfields.normal),{general:{title:'כותרת'}} );
- app.models.mainpage.fields.text   = _.extend( _.clone(app.basicfields.normal),{general:{title:'טקסט בעמוד הראשי'},edit:{ftype:'dhtml'}} );
- app.models.mainpage.fields.footer = _.extend( _.clone(app.basicfields.normal),{general:{title:'פוטר באתר'},edit:{ftype:'dhtml'}} );
+ app.models.mainpage.fields.title  = _.extend( _.clone(app.basicfields.normal),{general:{title:'Title'}} );
+ app.models.mainpage.fields.text   = _.extend( _.clone(app.basicfields.normal),{general:{title:'Text on Main Page'},edit:{ftype:'dhtml'}} );
+ app.models.mainpage.fields.footer = _.extend( _.clone(app.basicfields.normal),{general:{title:'Fotter of the website'},edit:{ftype:'dhtml'}} );
  
 } this.add_model=add_model;
 
