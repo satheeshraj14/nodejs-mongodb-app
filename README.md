@@ -8,10 +8,10 @@ to allow to create data managment web application quickly and easyly with very l
 
 ## Functional application structure:
 
-     '- server
-        |- app skeleton       // creates an app object
-        |- app modules files  // extends the app object with models and functions (duplicates predefined objects and modifies them)
-        '- serving            // extends the app object with routing, http serving functionality and initialization logic.
+   '- server
+      |- app skeleton      // creates an app object
+      |- app modules files // extends the app object with models and functions (duplicates predefined objects and modifies them)
+      '- serving           // extends the app object with routing, http serving functionality and initialization logic.
 
 The first idea about application structure was:
 the application is a single aplication but i can be defined in several moduls.
@@ -19,11 +19,11 @@ the application is a single aplication but i can be defined in several moduls.
 now i find it hard to implement everything i shared objects.
 
 ## Logical app object model:
-     '- application
-        |- shared models
-        |- shared templates of pages
-        |- shared functions of pages
-        '- shared urls
+   '- application
+      |- shared models
+      |- shared templates of pages
+      |- shared functions of pages
+      '- shared urls
 
 ###the same in words:
 a module extends the application's shared objects.
