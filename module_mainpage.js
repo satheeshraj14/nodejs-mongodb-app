@@ -8,7 +8,7 @@ function before(app)
 
 function add_model(app)
 {
- app.database.name='pijimi';
+ app.database.name='webappdb';
 
  app.models.mainpage               = _.clone(  app.basicmodel );
  app.models.mainpage.general.name  = 'mainpage';
