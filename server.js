@@ -3,7 +3,7 @@ require.paths.unshift(__dirname); //make local paths accecible
 
 var sys = require('sys');   // allaws to write to application streams (write to log)
 var http = require('http'); // allaws to create http server
-var mongo = require('mongodb');  //load double teplate module
+var mongo = require('deps/node-mongodb-native/lib/mongodb'); 
 var app = require('serving').app;
 
 db = new mongo.Db(app.database.name, new mongo.Server(app.database.host, app.database.port, {}), {});

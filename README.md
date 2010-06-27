@@ -45,3 +45,9 @@ at 1st all files composed together. later it is used as template.
 
 a problem: i have models and by a model i prepeare a template. so i have to invet how it all will possible to work.
 
+## links:
+
+http://www.asp.net/dynamicdata
+
+http://www.hkvstore.com/phpmaker/
+
