@@ -230,20 +230,34 @@ function App()
         that.afteradd( data , function (){ 
          if(callback)callback(); } ); } ); } );
      },
-     del: function( id )
+     
+     del: function( where, callback )
      {  
+      var that=this;
+      that.beforedel( data , function (){ 
+       that.dodel( data , function (){ 
+        that.afterdel( data , function (){ 
+         if(callback)callback(); } ); } ); } );     
      },
+     
      edit: function( where )
      {
       
      },
-     list: function(page)
+     
+     list: function( where , callback)
      {
       var that=this;
-      that.beforelist( data , function (){ 
-       that.dolist( data , function (){ 
-        that.afterlist( data , function (){ 
-         if(callback)callback(); } ); } ); } );
+      that.beforelist( where , function (where)
+      { 
+       that.dolist( where , function (where,acursor)
+       {
+        that.afterlist( awhere , acursor, function (bcursor)
+        { 
+         if(callback)callback(bcursor);
+        } );
+       } );
+      } );
      },
      multiupdate: function( where )
      {
@@ -265,6 +279,7 @@ function App()
      {
       
      },
+           
      // end useful utility functions //////////////
      // real action functions //////////////
      doadd: function( data ,callback )
@@ -276,22 +291,38 @@ function App()
       });
       if(callback) callback();
      },
-     dodel: function( id )
+     
+     dodel: function( where, callback )
      {
-      
-     },
-     doedit: function( where )
-     {
-      
-     },
-     dolist: function(data ,callback )
-     {
-      this.collection.insert(data,function (err,doc){ 
+      this.collection.remove( where, function (err,doc){ 
        if(err) throw err;
        //sys.puts('sucsess');
        //sys.puts(JSON.stringify(doc) );
       });
       if(callback) callback();
+     },
+     
+     doedit: function( where )
+     {
+      
+     },
+     dolist: function(where , callback )
+     {
+      this.collection.find(
+      function(err, cursor)
+      {
+       if(err) throw err;
+       else 
+       {
+        if(callback) callback(cursor);
+       }
+      });
+      
+      // iterating thru cursor:
+      //  cursor.each(function(err, item) {
+      //    if(item != null) sys.puts(sys.inspect(item));
+      //  });
+
      },
      domultiupdate: function( where )
      {
@@ -327,9 +358,9 @@ function App()
      {
       
      },
-     afterlist: function(page)
+     afterlist: function(where , cursor, callback)
      {
-      if(callback)callback();
+      if(callback)callback(cursor);
      },
      aftermultiupdate: function( where )
      {
@@ -365,9 +396,9 @@ function App()
      {
       
      },
-     beforelist: function(page)
+     beforelist: function(where,callback)
      {
-      
+      if(callback)callback();
      },
      beforemultiupdate: function( where )
      {
