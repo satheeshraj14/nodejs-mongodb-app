@@ -16,6 +16,9 @@ function add_model(app)
  app.models.mainpage.fields.title  = _.extend( _.clone(app.basicfields.normal),{general:{title:'Title'}} );
  app.models.mainpage.fields.text   = _.extend( _.clone(app.basicfields.normal),{general:{title:'Text on Main Page'},edit:{ftype:'dhtml'}} );
  app.models.mainpage.fields.footer = _.extend( _.clone(app.basicfields.normal),{general:{title:'Footer of the website'},edit:{ftype:'dhtml'}} );
+ app.meshups.mainpage={general:{title:'Main Page'},children:[],parents:[]};
+ app.meshups.mainpage.children.push({});
+ 
  
 } this.add_model=add_model;
 

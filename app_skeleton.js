@@ -2,6 +2,25 @@ var _ = require('merger');  //  lets do: _.extend(same,otherobjexts),  _.clone(o
 var sys = require('sys'); 
 var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //load double teplate module
 
+/*
+
+ +tables - collections
+  \/
+ +model - collection_specs
+  \/
+ -view - compose several tables if needed( sub tables to depth)
+  \/  
+ -models_meshup
+  \/
+ pages - bunch of pages for a models_meshup
+  \/
+ templates - bunch of pages for a models_meshup
+  \/
+ urls and actions - bunch of pages for a models_meshup
+  \/
+ requests - bunch of pages for a models_meshup
+ 
+*/
 
 function App()
 {
@@ -10,6 +29,7 @@ function App()
     this.websocket={port:8000};
     this.database={name:'test',server:'localhost',port:27017};
     this.models={};
+    this.meshups={};
     this.urls=[]; // {before:, action:, after:}
     this.templates={}; // {before:, action:, after:}
     this.menus={}; // {before:, action:, after:}
@@ -27,6 +47,9 @@ function App()
         
     this.defaultfield= 
       {
+      
+       collections_meshup:        {},
+       
        general:        { caption : 'id', ftype : 'string', size : '20',  primerykey : false, page : 1, autoupdatevalue : null, /* initial value */ },
        list:           { use: true, agregate : null, width : null, wrap : true, quicksearch: true, extsearch: false, },
        view:           { use: true, title: null,                 ftype: 'text', /* text / image */ },
@@ -388,9 +411,9 @@ function App()
      {
       if(callback)callback();
      },
-     beforedel: function( id )
+     beforedel: function( where , callback )
      {
-      
+      if(callback)callback();
      },
      beforeedit: function( where )
      {
