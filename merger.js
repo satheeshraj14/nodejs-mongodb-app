@@ -1,4 +1,4 @@
-
+// var sys = require('sys'); // enable for debugging this module
 function replace(a, b)
 {
  if (!b) return a;
@@ -6,7 +6,6 @@ function replace(a, b)
  for (key in b) a[key] = b[key];
  return a;
 } this.replace=replace;
-  
 
 function extend(a, b)
 {
@@ -16,21 +15,30 @@ function extend(a, b)
  {
   if(typeof a[key] === 'undefined')
   {
-        if(typeof b[key] === 'object') a[key] = extend({}, b[key]);
-   else if(typeof b[key] === 'array' ) a[key] = extend([], b[key]);
-   else                                a[key] = b[key];
+   if(typeof b[key] === 'object')
+   {
+    if( b[key] instanceof Array ) // http://javascript.crockford.com/remedial.html
+     a[key] = extend([], b[key]);
+    else
+     a[key] = extend({}, b[key]);
+   }
+   else
+     a[key] = b[key];
   }
-  else if(typeof a[key] === 'object' || typeof a[key] === 'array')
-                                       a[key] = extend(a[key], b[key]);
+  else if(typeof a[key] === 'object')
+    a[key] = extend(a[key], b[key]);
   else  
-                                       a[key] = b[key];
+    a[key] = b[key];
  }
  return a;
 } this.extend=extend;
 
 function clone(obj)
 {
- if (typeof obj === 'object') return extend({}, obj);
- else if (typeof obj === 'array')  return extend([], obj);
+ if (typeof obj === 'object')
+ {
+  if (obj instanceof Array ) return extend([], obj);
+  return extend({}, obj);
+ }
  return obj;
 } this.clone=clone;

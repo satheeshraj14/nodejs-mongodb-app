@@ -11,9 +11,14 @@ var modules=[  require('module_mainpage'), ]; // include  basic definision of a 
 //sys.puts('test');
  // install modules
  
- for(var i =0; i < modules.length ; i++ ) modules[i].before(app);
- for(var i =0; i < modules.length ; i++ ) modules[i].add(app)   ;
- for(var i =0; i < modules.length ; i++ ) modules[i].after(app) ;
+ for(var i =0; i < modules.length ; i++ ) modules[i].setupfirst(app);
+ for(var i =0; i < modules.length ; i++ ) modules[i].setup(app)   ;
+ 
+ for(var i in app.models) app.models[i].setupfirst(app);
+ for(var i in app.models) app.models[i].setup(app);
+ for(var i in app.models) app.models[i].setuplast(app);
+ 
+ for(var i =0; i < modules.length ; i++ ) modules[i].setuplast(app) ;
 //var app=new app_skeleton();
 
 app = _.extend(app,{
@@ -60,7 +65,7 @@ app = _.extend(app,{
            if(chain.length==0)   // if we finish scream finish
             callback();
            else
-            {
+           {
             var a=chain.pop();
             db.createCollection(a[0],a[1]);   /// if not done yet do next
            }
@@ -121,11 +126,61 @@ app = _.extend(app,{
   
   serveRequest: function(req, res)
   {
-    //app.urls[0][1][app.urls[0][2]](req, res);
-    res.writeHead(200, { 'Content-Type': 'text/plain'});
-    res.write("hendle request (req, res) ");
-    res.end();
-        
+    var myurl=url.parse(req.url);
+    var urlmatch=false;
+  
+    for(i=0;i<app.url_routes.length;i++)
+    {
+     urlmatch=false;
+     if(app.url_routes[i].path=='default') continue; //add defaut  at the end
+     if(typeof app.url_routes[i].pathbegins!='undefined')
+     {
+      if( myurl.pathname.substring(0,app.url_routes[i].pathbegins.length)==app.url_routes[i].pathbegins )
+      {
+       urlmatch=true;
+       sys.puts("match: "+app.url_routes[i].pathbegins);
+      }
+     }
+     else if(typeof app.url_routes[i].path!='undefined')
+     {
+      if(myurl.pathname==app.url_routes[i].path)
+      {
+       urlmatch=true;
+       sys.puts("match: "+app.url_routes[i].path);
+      }
+     }
+     if(urlmatch)
+     {
+      if(typeof app.url_routes[i].func!='undefined')
+      {
+       if(app.url_routes[i].func(data,settings,res,req,myurl))
+        return true; // true means break the preview function
+      }
+      if(typeof app.url_routes[i].page!='undefined')
+      {
+       if(app.url_routes[i].page.main(req,res,app.url_routes[i].page))
+        return true; // true means break the preview function
+      }
+      else if(typeof app.url_routes[i].code!='undefined')
+      {
+       var ftext=app.url_routes[i].code.toString();
+       ftext=ftext.substring(ftext.indexOf('{')+1,ftext.lastIndexOf('}'));
+       eval(ftext);
+      }
+      //if(typeof app.url_routes[i].dontbreak=='undefined')  myswitch += 'break;';
+      //else if(app.url_routes[i].dontbreak==false)  myswitch += 'break;';
+     }
+     
+    }
+    
+    
+    if(!urlmatch)
+    {
+     //app.urls[0][1][app.urls[0][2]](req, res);
+     res.writeHead(200, { 'Content-Type': 'text/plain'});
+     res.write("hendle request (req, res) TEST!! ");
+     res.end();
+    }   
     //this.writePixel(res);
 
     //var env = this.splitQuery(req.url.split('?')[1]);

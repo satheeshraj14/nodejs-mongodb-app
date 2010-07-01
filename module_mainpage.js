@@ -1,41 +1,34 @@
 var _ = require('merger');  //  lets do: _.extend(same,otherobjexts),  _.clone(obj) - creates new reference, see source to understand // 
+var sys = require('sys');
 
-
-function before(app)
+function setupfirst(app)
 {
- //modify self and others
-} this.before=before;
-
-function add_model(app)
-{
+ //modify self and others 
  app.database.name='webappdb';
+} this.setupfirst=setupfirst;
 
- app.models.mainpage               = _.clone(  app.basicmodel );
- app.models.mainpage.general.name  = 'mainpage';
- app.models.mainpage.fields.id     = _.extend( app.basicfields.id,{} );
- app.models.mainpage.fields.title  = _.extend( _.clone(app.basicfields.normal),{general:{title:'Title'}} );
- app.models.mainpage.fields.text   = _.extend( _.clone(app.basicfields.normal),{general:{title:'Text on Main Page'},edit:{ftype:'dhtml'}} );
- app.models.mainpage.fields.footer = _.extend( _.clone(app.basicfields.normal),{general:{title:'Footer of the website'},edit:{ftype:'dhtml'}} );
- app.meshups.mainpage={general:{title:'Main Page'},children:[],parents:[]};
- app.meshups.mainpage.children.push({});
- 
- 
-} this.add_model=add_model;
-
-function add_pages_and_urls(app)
+function add_models(app)
 {
- 
-// app.urls.push(['data/main',page,'main']);
- 
-} this.add_pages_and_urls=add_pages_and_urls;
 
-function add(app) // exported constructor
-{
-  add_model(app);
-} this.add=add;
+ app.models.mainpage                = _.clone(  app.basicmodel );
+ app.models.mainpage.general.name   = 'mainpage';
+ app.models.mainpage.general.urlprefix = 'mainpage';
+ app.models.mainpage.general.title  = 'Main Page';
+ app.models.mainpage.fields.id      = _.extend( app.basicfields.id,{} );
+ app.models.mainpage.fields.title   = _.extend( _.clone(app.basicfields.normal),{general:{title:'Title'}} );
+ app.models.mainpage.fields.text    = _.extend( _.clone(app.basicfields.normal),{general:{title:'Text on Main Page'},edit:{ftype:'dhtml'}} );
+ app.models.mainpage.fields.footer  = _.extend( _.clone(app.basicfields.normal),{general:{title:'Footer of the website'},edit:{ftype:'dhtml'}} );
+ app.models.mainpage.links.push ( {name:"othercollection",url:"othercollection.html",func:function (data){ return this.url+'?id='+data.id }} );
+  
+} this.add_models=add_models;
 
-function after(app)
+function setup(app) // exported constructor
 {
-  add_pages_and_urls(app);
+  add_models(app);
+} this.setup=setup;
+
+function setuplast(app)
+{
+  //add_pages_and_urls(app);
  //verify self and others
-} this.after=after;
+} this.setuplast=setuplast;
