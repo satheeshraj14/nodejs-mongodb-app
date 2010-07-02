@@ -30,6 +30,8 @@ function App()
     this.server={port:8000};
     this.websocket={port:8000};
     this.templates_path=__dirname+'/templates/';
+    this.doubletemplate=doubletemplate;
+    
     this.database={name:'test',server:'localhost',port:27017};
     this.models={};
     this.urls_route_before=[];
@@ -45,6 +47,8 @@ function App()
      return {valid:true,message:''};
     }
  
+    
+     
     this.defaultfield= 
       {
       
@@ -125,32 +129,6 @@ function App()
 '</html>';
     }
 
-    /*
-    this.template=function(name) // html, prepeare
-    {
-     return  
-     {
-      //"model":app.models.mainpage,
-      "main":function(req,res)
-      {
-       var data={};
-       data.name='muhahahahaha';
-       res.writeHead(200, { 'Content-Type': 'text/html' } );
-        res.write(this.templates['main'](req,res,data));
-       //res.write(this.templates['main'].call(app.models.mainpage,req,res,data));
-       res.end();
-      },
-      templates_data:
-      {
-       main:' hello <?=name?>',
-      },
-      templates:
-      {
-       main:function (req,res,data) { var name =data.name; return 'hello '+name },
-      },
-     }
-    };
-*/
 
     this.basicmodel=
     {
@@ -250,13 +228,14 @@ function App()
      list: function( where , callback)
      {
       var that=this;
-      that.beforelist( where , function (where1)
-      { 
-       that.dolist( where1 , function (where2,cursor2)
-       {
-        that.afterlist( where2 , cursor2, function (cursor3)
+      that.beforelist( where , function ()
+      {
+          
+       that.dolist( where , function (cursor)
+       {  
+        that.afterlist( where , cursor, function (cursor2)
         { 
-         if(callback)callback(cursor3);
+         if(callback){ callback(cursor2); }
         } );
        } );
       } );
@@ -414,22 +393,36 @@ function App()
      {
       for(p in this.pages)
       {
+       //add .model reference to page
        this.pages[p].model=this;
-       // load templates
-       for(t in this.pages[p].load_templates)
+       //add load template to page
+       this.pages[p].load=function(templatename,template_file,additional_data)
        {
-        var template_file=this.pages[p].load_templates[t];
+        var data={'page':page,'model':page.model,'app':app};
+        data=_.extend(data,additional_data);
+        if(page[templatename])
+         throw {name:'UserException',message:'template '+templatename+' already exists.'};
+        else
+         page[templatename]=doubletemplate.loadtemplate(app.templates_path+template_file,data)
+       };
+       // load templates
+       for(tempalte_name in this.pages[p].load_templates)
+       {
+        var template_file=this.pages[p].load_templates[tempalte_name];
         var data={'page':this.pages[p],'model':this,'app':app};
-        this.pages[p][t]=doubletemplate.loadtemplate(app.templates_path+template_file,data)
+      
+        this.pages[p][tempalte_name]=doubletemplate.loadtemplate(app.templates_path+template_file,data)
+        //app.loadtempalte(this.pages[p],tempalte_name,template_file,data);// this does the same as the line above
+
        }
        // prepeare templates
-       for(t in this.pages[p].prepeare_templates)
+       for(tempalte_name in this.pages[p].prepeare_templates)
        {
         // here we do closure to bound the function this this.
-        var that=this;
-        var template_function=function (data){(that.pages[p].prepeare_templates[t])(data)};
+        var model=this;
+        var template_function=function (data){(model.pages[p].prepeare_templates[tempalte_name])(data)};
         var data={'page':this.pages[p],'model':this,'app':app};
-        this.pages[p][t]=doubletemplate.prepeare(template_function,data);
+        this.pages[p][tempalte_name]=doubletemplate.prepeare(template_function,data);
        }
        
        //doubletemplate
@@ -616,15 +609,26 @@ function App()
 
        main:function (req,res,page,callback)
        {
-        res.writeHead(200, { 'Content-Type': 'text/plain'});
-     
+       
         //var currentpage=request.querystring['page']
-        var x;
-        x=page.model.list();
-        
-        data={'name':sys.inspect(x)};//;
-        res.write(this.list(data));
-        res.end();
+        page.model.list(null,function (cursor)
+        {
+         cursor.toArray(function(err, items)
+         {
+          res.writeHead(200, { 'Content-Type': 'text/plain'});        
+          data1={'name': items };//; sys.inspect(items).toString()
+          //var data1={dataitem:'ditem'};
+          //var page={pageitem:'pitem'};
+          //var foo=function (vars){var echo='';for(x in this) echo += x+"\r\n<br>"; return echo;};
+          //sys.puts(foo.call(page,data1));
+          var page1={page:page};
+          res.write(page.list.call(page1,data1));
+          //res.write(page.list.call(data1,data1));
+          res.end();
+          // sys.puts();
+          //sys.puts(sys.inspect(   items ));
+         });
+        });
        },
       }, // end page
      },
