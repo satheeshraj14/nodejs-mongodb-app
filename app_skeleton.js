@@ -36,18 +36,171 @@ function App()
     this.models={};
     this.urls_route_before=[];
     this.url_routes=[];
-    this.url_routes_after=[];
-    this.pages=[]; // {before:, action:, after:}
-    this.templates={}; // {before:, action:, after:}
-    this.menus={}; // {before:, action:, after:}
+    this.url_routes_after=[];  
+    this.master_templates_cache
+    this.pages=[]; 
+
+    this.menus={}; 
     this.collections={};
+    
+    this.templates= // master templates
+    {
+     load_templates:  // texts treated as templates filenames to load and prepeare
+     {
+      admin:"admin.html",
+     },
+     
+     prepeare_templates:  // function treated as templates function to prepeare
+     {
+      //template2:function template2(var){...}, // function template to be prepeared here instantly= bad idea
+     },
+    };
+    
+    this.editfields= // master templates
+    {
+     load_templates:  // texts treated as templates filenames to load and prepeare
+     {
+      checkbox:"editfields/checkbox.html",
+      date:"editfields/date.html",
+      file:"editfields/file.html",
+      hidden:"editfields/hidden.html",
+      image:"editfields/image.html",
+      number:"editfields/number.html",
+      password:"editfields/password.html",
+      radio:"editfields/radio.html",
+      select:"editfields/select.html",
+      text:"editfields/text.html",
+      textarea:"editfields/textarea.html",     
+     },
+     
+     prepeare_templates:  // function treated as templates function to prepeare
+     {
+      //template2:function template2(var){...}, // function template to be prepeared here instantly= bad idea
+     },
+     
+     // there is no data to templates of the 1st step
+     //prepere_data:function (template_name) {  return {'app':app};},
+     
+    };
+    
+    this.viewfields= // master templates
+    {
+     load_templates:  // texts treated as templates filenames to load and prepeare
+     {
+      div:"viewfields/div.html",
+      link:"viewfields/link.html",
+      image:"viewfields/image.html",
+      //additional might be good idea
+      checkbox:"viewfields/checkbox.html",
+      date:"viewfields/date.html",
+      file:"viewfields/file.html",
+      hidden:"viewfields/hidden.html",
+      //image:"viewfields/image.html",
+      number:"viewfields/number.html",
+      password:"viewfields/password.html",
+      radio:"viewfields/radio.html",
+      select:"viewfields/select.html",
+      text:"viewfields/text.html",
+      textarea:"viewfields/textarea.html",     
+     },
+     
+     prepeare_templates:  // function treated as templates function to prepeare
+     {
+      //template2:function template2(var){...}, // function template to be prepeared here instantly= bad idea
+     },
+
+     // there is no data to templates of the 1st step
+     //prepere_data:function (template_name) {  return {'app':app};},
+    };
+    
+   
+    this.load_templates = function (templates_object)
+    {  
+       
+       templates_object.load=function(tempalte_name,template_file,data2)
+       {
+        // data1 might need clone here , but seems not needed because wil never changed from inside template
+        var data1=templates_object.prepere_data(tempalte_name,tempalte_name);
+        if(typeof data2 === 'undefined' && typeof data1 !== 'undefined')
+         data2={};
+        if(typeof data2 !== 'undefined')
+         _.add(data2,data1);
+        if(templates_object[tempalte_name])
+         throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
+        else
+         templates_object[tempalte_name]=doubletemplate.loadtemplate(app.templates_path+template_file,templates_object,data2);
+       }
+       templates_object._=_;
+       
+       templates_object.load1=function(tempalte_name,template_file)
+       {
+        if(templates_object[tempalte_name])
+         throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
+        else
+         templates_object[tempalte_name]=doubletemplate.loadtemplate1(app.templates_path+template_file,templates_object);
+       }
+       
+       var data,tempalte_name,template_file;
+       // load templates
+       for(tempalte_name in templates_object.load_templates)
+       {
+        data=templates_object.prepere_data(templates_object,tempalte_name);
+        template_file=templates_object.load_templates[tempalte_name];
+        if(templates_object[tempalte_name])
+         throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
+        else
+         templates_object[tempalte_name]=doubletemplate.loadtemplate(app.templates_path+template_file,templates_object,data)
+       }
+                
+       // prepeare function templates
+       for(tempalte_name in templates_object.prepeare_templates)
+       {
+        data=templates_object.prepere_data(templates_object,tempalte_name);
+        if(templates_object[tempalte_name])
+         throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
+        else
+         templates_object[tempalte_name]=doubletemplate.prepeare(templates_object.prepeare_templates[tempalte_name],'function/'+tempalte_name,templates_object,data);
+       }
+    }
+    
+   
+    this.load_templates1 = function (templates_object)
+    {
+       templates_object.load=function(tempalte_name,template_file)
+       {
+        if(templates_object[tempalte_name])
+         throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
+        else
+         templates_object[tempalte_name]=doubletemplate.loadtemplate1(app.templates_path+template_file,templates_object);
+       }
+       templates_object._=_;
+       
+       var tempalte_name;
+       // load templates
+       for(tempalte_name in templates_object.load_templates)
+       {
+        var template_file=templates_object.load_templates[tempalte_name];
+        if(templates_object[tempalte_name])
+         throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
+        else
+         templates_object[tempalte_name]=doubletemplate.loadtemplate1(app.templates_path+template_file,templates_object)
+       }
+    }
+    
+    this.load_app_templates=function (callback)
+     {
+      this.load_templates1(this.templates);
+      this.load_templates1(this.editfields);
+      this.load_templates1(this.viewfields);      
+      if(callback)callback(callback);
+     };
+    
 
     this.defaultvalidation=function ()
     {
      return {valid:true,message:''};
     }
  
-    
      
     this.defaultfield= 
       {
@@ -68,7 +221,7 @@ function App()
         tempalte:null /* null or custom template function or file name etc */,
        },
        edittag:        {
-        text:      { size: 30, maxlenth: null, attributes: '', lookup: false, }, 
+        text:      { size: 30, maxlength: null, attributes: '', lookup: false, }, 
         password:  { size: 30, maxlength: null, attributes: '', }, 
         radio:     { attributes: '', lookup: false, }, 
         checkbox:  { attributes: '', lookup: false, },
@@ -85,51 +238,9 @@ function App()
 
     this.basicfields=
     {
-      id:     _.extend(app.defaultfield,{general:{caption : 'id', pimerykey:true, ftype : 'number'},add:{use:false},edit:{use:false,readonly:true}}) ,
-      normal: _.extend(app.defaultfield,{general:{}}),
+      id:     _.extend(_.clone(app.defaultfield),{general:{caption : 'id', pimerykey:true, ftype : 'number'},add:{use:false},edit:{use:false,readonly:true}}) ,
+      normal: _.extend(_.clone(app.defaultfield),{general:{}}),
     };
-    this.header= function ()
-    {
-      return '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">'+
-      '<html><head><title>Application Editor</title>'+
-      '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">'+
-      '</head><body>'+
-      '<div class="ktLayout">'
-      '<!-- header (begin) -->'+
-      '<div class="ktHeaderRow"><img src="logo.png" alt="" border="0"></div>'+
-      '<!-- header (end) -->'+
-      '<!-- content (begin) -->'+
-      '<table cellspacing="0" class="ktContentTable">'+
-       '<tr>'+
-        '<td class="ktMenuColumn">'+
-        '<!-- left column (begin) -->'+
-        '<?php include "ktmenu.php" ?>'+
-        '<!-- left column (end) -->'+
-        '</td>'+
-	    '<td class="ktContentColumn">'+
-	    '<!-- right column (begin) -->'+
-	     '<p class="nodejsmaker"><b>Application Editor</b></p>';
-    }
-    this.footer= function ()
-    {
-      return '<p>&nbsp;</p>'+			
-'<!-- right column (end) -->'+
-'</td>'+
-'</tr>'+
-'</table>'+
-'<!-- content (end) -->'+
-'<!-- footer (begin) -->'+
-'<div class="ktFooterRow">'+
-'<div class="ktFooterText">&nbsp;&copy;2009 чег иеб</div>'+	
-'</div>'+
-'<!-- footer (end) -->'+	
-'</div>'+
-'<div align=center id="session_upkeep"><iframe height="400" width="140" border="0" frameborder="no" src="site_sessionkeep.php"></iframe></div>'+        
-'</body>'+
-'</html>';
-    }
-
-
     this.basicmodel=
     {
 
@@ -391,53 +502,29 @@ function App()
      },
      doaddpages: function (callback)
      {
+      var p,tempalte_name,template_function;
       for(p in this.pages)
       {
+       var page=this.pages[p];
        //add .model reference to page
-       this.pages[p].model=this;
-       //add load template to page
-       this.pages[p].load=function(templatename,template_file,additional_data)
-       {
-        var data={'page':page,'model':page.model,'app':app};
-        data=_.extend(data,additional_data);
-        if(page[templatename])
-         throw {name:'UserException',message:'template '+templatename+' already exists.'};
-        else
-         page[templatename]=doubletemplate.loadtemplate(app.templates_path+template_file,data)
-       };
-       // load templates
-       for(tempalte_name in this.pages[p].load_templates)
-       {
-        var template_file=this.pages[p].load_templates[tempalte_name];
-        var data={'page':this.pages[p],'model':this,'app':app};
-      
-        this.pages[p][tempalte_name]=doubletemplate.loadtemplate(app.templates_path+template_file,data)
-        //app.loadtempalte(this.pages[p],tempalte_name,template_file,data);// this does the same as the line above
+       page.model=this;      
+       app.load_templates(page);
 
-       }
-       // prepeare templates
-       for(tempalte_name in this.pages[p].prepeare_templates)
-       {
-        // here we do closure to bound the function this this.
-        var model=this;
-        var template_function=function (data){(model.pages[p].prepeare_templates[tempalte_name])(data)};
-        var data={'page':this.pages[p],'model':this,'app':app};
-        this.pages[p][tempalte_name]=doubletemplate.prepeare(template_function,data);
-       }
-       
-       //doubletemplate
       }
       if(callback)callback(callback);
      },
      doaddurls: function (callback)
      {
+      var p;
       // adlater calling route before, route after
       for(p in this.pages)
-      { 
+      {  
        var pageurl='/'+this.general.urlprefix+this.pages[p].pageurl;
+       
        //app.url_routes.push({path:pageurl,code:function(req,res,page,callback){res.writeHead(200, { 'Content-Type': 'text/plain'});res.write('hello world');res.end();}});
        app.url_routes.push({path:pageurl,page:this.pages[p]});
       }
+
       if(callback)callback(callback);
      },
      doinit: function( data )
@@ -585,52 +672,8 @@ function App()
      // end before event functions //////////////
      pages:
      {
-      list:
-      {
-       pageurl:'/list.jsp',
-       // add error on existing function
-       
-       load_templates:  // texts treated as templates toload and prepeare
-       {
-        list:"default/list.html",
-        //this.template2(data),
-        //this.template2(data),
-        //function template2(var){...}, // function template to be prepeared here instantly= bad idea
-       }, // to add templates later use: this.templates.template2=this.template2(data) ...
-       
-       prepeare_templates:  // texts treated as templates toload and prepeare
-       {
-        //template2:function template2(var){...}, // function template to be prepeared here instantly= bad idea
-       }, // to add templates later use: this.templates.template2=this.template2(data) ...
-       
-       // will be here: this.list=function(){...
-       // will be here: this.template2=function(){...
-       //list:function (){}, 
-
-       main:function (req,res,page,callback)
-       {
-       
-        //var currentpage=request.querystring['page']
-        page.model.list(null,function (cursor)
-        {
-         cursor.toArray(function(err, items)
-         {
-          res.writeHead(200, { 'Content-Type': 'text/plain'});        
-          data1={'name': items };//; sys.inspect(items).toString()
-          //var data1={dataitem:'ditem'};
-          //var page={pageitem:'pitem'};
-          //var foo=function (vars){var echo='';for(x in this) echo += x+"\r\n<br>"; return echo;};
-          //sys.puts(foo.call(page,data1));
-          var page1={page:page};
-          res.write(page.list.call(page1,data1));
-          //res.write(page.list.call(data1,data1));
-          res.end();
-          // sys.puts();
-          //sys.puts(sys.inspect(   items ));
-         });
-        });
-       },
-      }, // end page
+      list:require('templates/default/list').page.call(this,app,this), // end page
+      add:require('templates/default/add').page.call(this,app,this), // end page
      },
      
         

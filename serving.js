@@ -9,24 +9,29 @@ var app=require('app_skeleton').app; // include  basic definision of a model and
 var modules=[  require('module_mainpage'), ]; // include  basic definision of a model and a filed in a model
 
 //sys.puts('test');
- // install modules
- 
- for(var i =0; i < modules.length ; i++ ) modules[i].setupfirst(app);
- for(var i =0; i < modules.length ; i++ ) modules[i].setup(app)   ;
- 
- for(var i in app.models) app.models[i].setupfirst(app);
- for(var i in app.models) app.models[i].setup(app);
- for(var i in app.models) app.models[i].setuplast(app);
- 
- for(var i =0; i < modules.length ; i++ ) modules[i].setuplast(app) ;
-//var app=new app_skeleton();
+
+    // install modules and setup models
+    for(var i =0; i < modules.length ; i++ ) modules[i].setupfirst(app);
+    app.load_app_templates(); 
+    for(var i =0; i < modules.length ; i++ ) modules[i].setup(app)   ;
+     for(var i in app.models) app.models[i].setupfirst(app);
+     for(var i in app.models) app.models[i].setup(app);
+    // end install modules and setup models
+
 
 app = _.extend(app,{
   init: function(db, callback)
   {
-    this.setupDb(db, function() { 
-    
-    doubletemplate
+
+    //  last install modules and setup models
+     for(var i in app.models) app.models[i].setuplast(app);
+       for(var i =0; i < modules.length ; i++ ) modules[i].setuplast(app) ;
+    // end last install modules and setup models
+
+   
+    this.setupDb(db, function() {
+
+    //doubletemplate
     callback(); } );   
     //    this.setupWebSocket();
     //this.addAllMetrics(db);
@@ -128,7 +133,7 @@ app = _.extend(app,{
   {
     var myurl=url.parse(req.url);
     var urlmatch=false;
-  
+    var i;  
     for(i=0;i<app.url_routes.length;i++)
     {
      urlmatch=false;
@@ -151,6 +156,7 @@ app = _.extend(app,{
      }
      if(urlmatch)
      {
+
       if(typeof app.url_routes[i].func!='undefined')
       {
        if(app.url_routes[i].func(data,settings,res,req,myurl))
@@ -159,7 +165,9 @@ app = _.extend(app,{
       if(typeof app.url_routes[i].page!='undefined')
       {
        if(app.url_routes[i].page.main(req,res,app.url_routes[i].page))
+       { 
         return true; // true means break the preview function
+       }
       }
       else if(typeof app.url_routes[i].code!='undefined')
       {
