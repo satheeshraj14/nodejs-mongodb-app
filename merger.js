@@ -52,3 +52,9 @@ function clone(obj)
  }
  return obj;
 } this.clone=clone;
+
+function cloneextend(cloneobj,exteddata)
+{
+ return extend(clone(cloneobj),exteddata);
+} this.cloneextend=cloneextend;
+

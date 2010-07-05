@@ -16,9 +16,9 @@ while true;
   echo stopping $(date);
    
   if [ "$exit_value" != "0" ]; then 
-   sleep 3;
+   sleep 5;
   else 
-   sleep 1;
+   sleep 0;
   fi ;
 
  done;

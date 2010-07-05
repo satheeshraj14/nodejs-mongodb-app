@@ -5,8 +5,7 @@ var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //lo
 //var doubletemplate=te.doubletemplate; // export double template function to global
 var fs = require('fs');    // allaws to open files
 var app=require('app_skeleton').app; // include  basic definision of a model and a filed in a model
-
-var modules=[  require('module_mainpage'), ]; // include  basic definision of a model and a filed in a model
+var modules=[  require('module_pijimi'), ]; // include  basic definision of a model and a filed in a model
 
 //sys.puts('test');
 
@@ -45,45 +44,41 @@ app = _.extend(app,{
     //  db.collection('visits', function(err, collection)
     //  {
     //    model.collection = collection;  callback();   });  });
+    var arrmodels=[],key;
+    for(key in app.models)
+    {
+     app.models[key].modelname=key;
+     arrmodels.push(app.models[key]);
+    }
+    
     
     // chained version:
-    
-    var chain=[]; // 1st createa a chain
-    for(modelname in app.models)
-    {
-     var model=app.models[modelname];
-     chain.push       /// push tehre an array of functions to be executed (functions with references) 
-     ([ // array of args
-       model.general.name      // function arg1
-        ,
-       function(err, collection) /// function arg2
-       {
-        sys.puts('create collection:'+modelname+' = '+model.general.name);
-        db.collection
-        (
-         model.general.name
-          ,
-         function(err, collection)
-         {
-           model.collection = collection;
-           // chain
-           if(chain.length==0)   // if we finish scream finish
-            callback();
-           else
-           {
-            var a=chain.pop();
-            db.createCollection(a[0],a[1]);   /// if not done yet do next
-           }
-           // end chain 
-         }
-        );
-       }
-       , 
-      ]);
-    }
-    //ignite chain
-    var a=chain.pop();
-    db.createCollection(a[0],a[1]);
+    app.step(
+     function ()
+     {
+      var group = this.group();
+      arrmodels.forEach(function (model)
+      {
+       sys.puts('create collection: app.models.'+model.modelname+'.collection = '+model.general.name);
+       db.collection
+       (
+        model.general.name
+         ,
+        function(err, collection)
+        {
+         model.collection = collection;
+         group();
+        }
+       );
+      });
+      this.next();
+     },
+     function (err, contents)
+     {
+      //if (err) { throw err; }
+      callback();
+     }
+    );
     //end ignite chain
   },
   setupPages: function ()
@@ -131,7 +126,8 @@ app = _.extend(app,{
   
   serveRequest: function(req, res)
   {
-    var myurl=url.parse(req.url);
+    var myurl=url.parse(req.url,true);
+    req.parsedurl=myurl;
     var urlmatch=false;
     var i;  
     for(i=0;i<app.url_routes.length;i++)

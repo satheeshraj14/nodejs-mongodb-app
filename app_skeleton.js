@@ -1,7 +1,9 @@
 var _ = require('merger');  //  lets do: _.extend(same,otherobjexts),  _.clone(obj) - creates new reference, see source to understand // 
-var sys = require('sys'); 
-var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //load double teplate module
-
+var sys = require('sys');
+ var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //load double teplate module
+var httputils = require('httputils');
+var ObjectID= require('deps/node-mongodb-native/lib/mongodb/bson/bson').ObjectID;
+var step=require('deps/step/lib/step');
 /*
 
  +tables - collections
@@ -18,9 +20,9 @@ var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //lo
   \/
  +templates - bunch of pages for a models_meshup
   \/
- urls and actions - bunch of pages for a models_meshup
+ +urls and actions - bunch of pages for a models_meshup
   \/
- requests - bunch of pages for a models_meshup
+ +requests - bunch of pages for a models_meshup - // missing to rewrite to comp
  
 */
 
@@ -31,6 +33,9 @@ function App()
     this.websocket={port:8000};
     this.templates_path=__dirname+'/templates/';
     this.doubletemplate=doubletemplate;
+    this.httputils=httputils;
+    this.ObjectID=ObjectID;
+    this.step=step;
     
     this.database={name:'test',server:'localhost',port:27017};
     this.models={};
@@ -207,7 +212,7 @@ function App()
       
        collections_meshup:        {},
        
-       general:        { caption : 'id', ftype : 'string', size : '20',  primerykey : false, page : 1, autoupdatevalue : null, /* initial value */ },
+       general:        { title : 'id', ftype : 'string', size : '20',  primerykey : false, page : 1, autoupdatevalue : null, /* initial value */ },
        list:           { use: true, agregate : null, width : null, wrap : true, quicksearch: true, extsearch: false, tempalte:null /* null or custom template function or file name etc */, },
        view:           { use: true, title: null,                 ftype: 'text', /* text / image */ },
        edit:           { use: true, title: null, readonly:false, ftype: 'text', /* text / password / radio / checkbox / select / textarea / file / hidden */ },
@@ -238,7 +243,7 @@ function App()
 
     this.basicfields=
     {
-      id:     _.extend(_.clone(app.defaultfield),{general:{caption : 'id', pimerykey:true, ftype : 'number'},add:{use:false},edit:{use:false,readonly:true}}) ,
+      id:     _.extend(_.clone(app.defaultfield),{general:{title : 'id', pimerykey:true, ftype : 'number'},add:{use:false},edit:{use:false,readonly:true}}) ,
       normal: _.extend(_.clone(app.defaultfield),{general:{}}),
     };
     this.basicmodel=
@@ -317,23 +322,31 @@ function App()
      {
       var that=this;
       that.beforeadd( data , function (){ 
-       that.doadd( data , function (){ 
-        that.afteradd( data , function (){ 
-         if(callback)callback(); } ); } ); } );
+       that.doadd( data , function (data2){ 
+        that.afteradd( data2 , function (){ 
+         if(callback)callback(data2); } ); } ); } );
      },
      
      del: function( where, callback )
      {  
+   sys.puts( "1a"+sys.inspect(where));
       var that=this;
-      that.beforedel( data , function (){ 
-       that.dodel( data , function (){ 
-        that.afterdel( data , function (){ 
+      that.beforedel( where , function (){
+       sys.puts( "2"+sys.inspect(where));
+       that.dodel( where , function (){
+        sys.puts( "3a"+sys.inspect(where));
+        that.afterdel( where , function (){
+      sys.puts( "4a"+sys.inspect(where)); 
          if(callback)callback(); } ); } ); } );     
      },
      
-     edit: function( where )
+     update: function( where ,data ,callback )
      {
-      
+      var that=this;
+      that.beforeupdate( where ,data , function (){ 
+       that.doupdate( where ,data , function (where ,data2){ 
+        that.afterupdate( where ,data2 , function (){ 
+         if(callback)callback(where ,data2); } ); } ); } );
      },
      
      list: function( where , callback)
@@ -424,18 +437,21 @@ function App()
            
      // end useful utility functions //////////////
      // real action functions //////////////
-     doadd: function( data ,callback )
+     doadd: function( data2 ,callback )
      {
-      this.collection.insert(data,function (err,doc){ 
+      this.collection.insert(data2,function (err,doc){ 
        if(err) throw err;
        //sys.puts('sucsess');
        //sys.puts(JSON.stringify(doc) );
+       if(callback) callback(doc);
       });
-      if(callback) callback();
+ 
      },
      
      dodel: function( where, callback )
      {
+      
+       
       this.collection.remove( where, function (err,doc){ 
        if(err) throw err;
        //sys.puts('sucsess');
@@ -444,10 +460,19 @@ function App()
       if(callback) callback();
      },
      
-     doedit: function( where )
+     doupdate: function( where, data2 ,callback )
      {
-      
+      sys.puts('1st');
+      sys.puts(sys.inspect([where,data2]));
+      this.collection.update(where,data2,function (err,doc){ 
+       if(err) throw err;
+       sys.puts('sucsess');
+       sys.puts(JSON.stringify(doc) );
+       if(callback) callback(doc);
+      });
+ 
      },
+     
      dolist: function(where , callback )
      {
 	  // http://www.mongodb.org/display/DOCS/Querying
@@ -464,16 +489,30 @@ function App()
 	  // http://rickosborne.org/download/SQL-to-MongoDB.pdf
 	  // http://rickosborne.org/blog/index.php/2010/02/08/playing-around-with-mongodb-and-mapreduce-functions/
 		 
-      this.collection.find(
-      function(err, cursor)
+		  if(!where)
       {
-       if(err) throw err;
-       else 
+       this.collection.find(
+       function(err, cursor)
        {
-        if(callback) callback(cursor);
-       }
-      });
-      
+        if(err) throw err;
+        else 
+        {
+         if(callback) callback(cursor);
+        }
+       });
+      }
+      else
+      {
+       this.collection.find(where,
+       function(err, cursor)
+       {
+        if(err) throw err;
+        else 
+        {
+         if(callback) callback(cursor);
+        }
+       });
+      }
       // iterating thru cursor:
       //  cursor.each(function(err, item) {
       //    if(item != null) sys.puts(sys.inspect(item));
@@ -546,17 +585,17 @@ function App()
      },
      // end real action functions //////////////
      // after event functions //////////////
-     afteradd: function( where , callback )
+     afteradd: function( data , callback )
      {
-      if(callback)callback();
+      if(callback)callback(data);
      },
-     afterdel: function( id )
+     afterdel: function( where , callback  )
      {
-      
+      if(callback)callback(where);
      },
-     afteredit: function( where )
+     afterupdate: function( where, data , callback  )
      {
-      
+      if(callback)callback(where,data);
      },
      afterlist: function(where , cursor, callback)
      {
@@ -609,17 +648,17 @@ function App()
      },
      // end after event functions //////////////
      // before event functions //////////////
-     beforeadd: function( where , callback )
+     beforeadd: function( data1 , callback )
      {
-      if(callback)callback();
+      if(callback)callback(data1);
      },
      beforedel: function( where , callback )
      {
       if(callback)callback();
      },
-     beforeedit: function( where )
+     beforeupdate: function( where,data,callback )
      {
-      
+      if(callback)callback(where,data);
      },
      beforelist: function(where,callback)
      {
@@ -674,6 +713,8 @@ function App()
      {
       list:require('templates/default/list').page.call(this,app,this), // end page
       add:require('templates/default/add').page.call(this,app,this), // end page
+      edit:require('templates/default/edit').page.call(this,app,this), // end page
+      del:require('templates/default/del').page.call(this,app,this), // end page
      },
      
         
