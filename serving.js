@@ -22,16 +22,17 @@ app = _.extend(app,{
   init: function(db, callback)
   {
 
-    //  last install modules and setup models
-     for(var i in app.models) app.models[i].setuplast(app);
-       for(var i =0; i < modules.length ; i++ ) modules[i].setuplast(app) ;
-    // end last install modules and setup models
-
-   
     this.setupDb(db, function() {
 
-    //doubletemplate
-    callback(); } );   
+     //  last install modules and setup models
+     for(var i in app.models) app.models[i].setuplast(app);
+     for(var i =0; i < modules.length ; i++ ) modules[i].setuplast(app) ;
+     app.setuppages();
+     // end last install modules and setup models
+    
+    callback(); 
+    
+    } );   
     //    this.setupWebSocket();
     //this.addAllMetrics(db);
   },
@@ -56,9 +57,10 @@ app = _.extend(app,{
     app.step(
      function ()
      {
-      var group = this.group();
+      var newgroup = this.group();
       arrmodels.forEach(function (model)
       {
+       var ret_group_item=newgroup();
        sys.puts('create collection: app.models.'+model.modelname+'.collection = '+model.general.name);
        db.collection
        (
@@ -67,11 +69,10 @@ app = _.extend(app,{
         function(err, collection)
         {
          model.collection = collection;
-         group();
+         ret_group_item(null,true);         
         }
        );
       });
-      this.next();
      },
      function (err, contents)
      {
@@ -79,7 +80,7 @@ app = _.extend(app,{
       callback();
      }
     );
-    //end ignite chain
+
   },
   setupPages: function ()
   {
@@ -157,6 +158,7 @@ app = _.extend(app,{
       {
        if(app.url_routes[i].func(data,settings,res,req,myurl))
         return true; // true means break the preview function
+       else urlmatch=false;
       }
       if(typeof app.url_routes[i].page!='undefined')
       {
@@ -164,6 +166,7 @@ app = _.extend(app,{
        { 
         return true; // true means break the preview function
        }
+       else urlmatch=false;
       }
       else if(typeof app.url_routes[i].code!='undefined')
       {
@@ -180,9 +183,10 @@ app = _.extend(app,{
     
     if(!urlmatch)
     {
+     sys.puts("notmatch: "+myurl.pathname);
      //app.urls[0][1][app.urls[0][2]](req, res);
-     res.writeHead(200, { 'Content-Type': 'text/plain'});
-     res.write("hendle request (req, res) TEST!! ");
+     res.writeHead(202, { 'Content-Type': 'text/html'});
+     res.write("<html><head><title>Unhandeld request</title></head><body>hendle request (req, res) \r\n did not match any url: \r\n "+myurl.pathname+" \r\n<br\ > <a href='/'>click here</a> to go to the main page</body></html>");
      res.end();
     }   
     //this.writePixel(res);

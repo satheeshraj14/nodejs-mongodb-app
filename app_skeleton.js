@@ -36,6 +36,7 @@ function App()
     this.httputils=httputils;
     this.ObjectID=ObjectID;
     this.step=step;
+    this.sys=sys;
     
     this.database={name:'test',server:'localhost',port:27017};
     this.models={};
@@ -75,7 +76,8 @@ function App()
       radio:"editfields/radio.html",
       select:"editfields/select.html",
       text:"editfields/text.html",
-      textarea:"editfields/textarea.html",     
+      textarea:"editfields/textarea.html",
+      html:"editfields/html.html",     
      },
      
      prepeare_templates:  // function treated as templates function to prepeare
@@ -106,7 +108,8 @@ function App()
       radio:"viewfields/radio.html",
       select:"viewfields/select.html",
       text:"viewfields/text.html",
-      textarea:"viewfields/textarea.html",     
+      textarea:"viewfields/textarea.html",
+      html:"viewfields/html.html",     
      },
      
      prepeare_templates:  // function treated as templates function to prepeare
@@ -119,21 +122,27 @@ function App()
     };
     
    
+   
     this.load_templates = function (templates_object)
-    {  
+    {
+       templates_object.htmlencode=doubletemplate.htmlencode;
        
        templates_object.load=function(tempalte_name,template_file,data2)
        {
         // data1 might need clone here , but seems not needed because wil never changed from inside template
-        var data1=templates_object.prepere_data(tempalte_name,tempalte_name);
-        if(typeof data2 === 'undefined' && typeof data1 !== 'undefined')
-         data2={};
-        if(typeof data2 !== 'undefined')
-         _.add(data2,data1);
-        if(templates_object[tempalte_name])
-         throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
-        else
-         templates_object[tempalte_name]=doubletemplate.loadtemplate(app.templates_path+template_file,templates_object,data2);
+        templates_object.prepere_data(tempalte_name,tempalte_name,
+         function(data1)
+         {
+          if(typeof data2 === 'undefined' && typeof data1 !== 'undefined')
+           data2={};
+          if(typeof data2 !== 'undefined')
+           _.add(data2,data1);
+          if(templates_object[tempalte_name])
+           throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
+          else
+           templates_object[tempalte_name]=doubletemplate.loadtemplate(app.templates_path+template_file,templates_object,data2);
+         }        
+        );
        }
        templates_object._=_;
        
@@ -147,30 +156,38 @@ function App()
        
        var data,tempalte_name,template_file;
        // load templates
+       if(templates_object.load_templates)
        for(tempalte_name in templates_object.load_templates)
        {
-        data=templates_object.prepere_data(templates_object,tempalte_name);
-        template_file=templates_object.load_templates[tempalte_name];
-        if(templates_object[tempalte_name])
-         throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
-        else
-         templates_object[tempalte_name]=doubletemplate.loadtemplate(app.templates_path+template_file,templates_object,data)
+        templates_object.prepere_data(templates_object,tempalte_name, function(data)
+         {
+          template_file=templates_object.load_templates[tempalte_name];
+          if(templates_object[tempalte_name])
+           throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
+          else
+           templates_object[tempalte_name]=doubletemplate.loadtemplate(app.templates_path+template_file,templates_object,data)
+         }
+        );
        }
                 
        // prepeare function templates
+       if(templates_object.prepeare_templates)
        for(tempalte_name in templates_object.prepeare_templates)
        {
-        data=templates_object.prepere_data(templates_object,tempalte_name);
-        if(templates_object[tempalte_name])
-         throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
-        else
-         templates_object[tempalte_name]=doubletemplate.prepeare(templates_object.prepeare_templates[tempalte_name],'function/'+tempalte_name,templates_object,data);
+        templates_object.prepere_data(templates_object,tempalte_name,function (data)
+        {
+         if(templates_object[tempalte_name])
+          throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
+         else
+          templates_object[tempalte_name]=doubletemplate.prepeare(templates_object.prepeare_templates[tempalte_name],'function/'+tempalte_name,templates_object,data);        
+        });
        }
     }
     
-   
     this.load_templates1 = function (templates_object)
     {
+       templates_object.htmlencode=doubletemplate.htmlencode;
+       
        templates_object.load=function(tempalte_name,template_file)
        {
         if(templates_object[tempalte_name])
@@ -182,6 +199,7 @@ function App()
        
        var tempalte_name;
        // load templates
+       if(templates_object.load_templates)
        for(tempalte_name in templates_object.load_templates)
        {
         var template_file=templates_object.load_templates[tempalte_name];
@@ -205,7 +223,155 @@ function App()
     {
      return {valid:true,message:''};
     }
- 
+    
+    
+    this.prepare_subitems = function (main_model)
+    {
+     
+     var operation,operations=['edit','view'];
+     var operations_copy={'list':'view','add':'edit','multiupdate':'edit','advancedsearch':'edit'};
+     var arrselections,fieldname,havelookup,lookupinfo,field,operations_type;
+     
+     main_model.prep_subitems={};
+     
+     for(var i=0;i<operations.length;i++)
+     {
+      operation=operations[i];
+      arrselections=[];
+      operations_type=operation;
+           if(operation=='view')           operations_type='view';
+      else if(operation=='list')           operations_type='view';
+      else if(operation=='add')            operations_type='edit';
+      else if(operation=='multiupdate')    operations_type='edit';
+      else if(operation=='advancedsearch') operations_type='edit'; // add searchtags later
+      for(fieldname in main_model.fields)
+      {
+       
+       field=main_model.fields[fieldname];
+
+       if(operations_type=='view')
+       {
+        if(typeof field.viewtag[
+         field[operations_type].ftype
+        ].lookup===null)
+        {
+         havelookup=field.edittag[
+          field['edit'].ftype
+         ].lookup
+         ?true:false;
+         if(havelookup)
+          lookupinfo=field.edittag.lookup;
+        }
+        else
+        {
+         havelookup=field.edittag[
+          field[operations_type].ftype
+         ].lookup
+         ?true:false;
+         if(havelookup)
+         {
+          if(field.viewtag.lookup.sameasedit)
+           lookupinfo=field.edittag.lookup;
+          else
+          {
+           lookupinfo=field.viewtag.lookup;
+          } 
+         }
+        }
+       }
+       else
+       {
+        havelookup=field.edittag[ field[operations_type].ftype  ].lookup?true:false;
+        if(havelookup)
+        {
+         lookupinfo=field.edittag.lookup;
+        }
+       }
+        
+       if(havelookup)
+       {
+        arrselections.push({where:(lookupinfo.where?lookupinfo.where:false), submodel:app.models[lookupinfo.tablename],'fieldname':fieldname,cursor:[],'lookupinfo':lookupinfo});
+       }
+      }
+      
+      main_model.prep_subitems[operation]=arrselections;
+     }
+       
+     
+     var source,target;
+     for(target in operations_copy)
+     {
+      source=operations_copy[target];
+      main_model.prep_subitems[target]=main_model.prep_subitems[source];
+     }
+     //sys.puts(sys.inspect(main_model.prep_subitems));
+    }
+
+
+    this.load_subitems = function (main_model,operation,callback)
+    {
+     if(main_model.prep_subitems[operation].length==0)callback({});
+     //sys.puts(main_model.modelname+','+operation);
+     //sys.puts(main_model.modelname+"|"+operation+"| "+sys.inspect(main_model.prep_subitems[operation]));     
+     var arrselections=_.cloneuptolevel(main_model.prep_subitems[operation],2)
+     app.step(
+      function ()
+      {
+       //sys.puts('start get items for a all sub items collection');
+       var new_group = this.group();
+       //sys.puts(sys.inspect(arrselections,false,1));
+       arrselections.forEach(function (selection,i,arr)
+       //for(var i=0,l=arrselections.length;i<l;i++)
+       {
+        //sys.puts('start get items for a subitem collection '+selection.fieldname);
+        var ret_group=new_group(); // add + 1 count to wait for results list
+        //sys.puts('select sub items: selections.'+selection.fieldname+'.fieldname = '+selection.fieldname);
+        if(!selection.where)selection.where=null;
+     
+        selection.submodel.list(selection.where,function (cursor)
+        {
+         try{
+//          sys.puts('ret list' + sys.inspect(cursor));
+         cursor.toArray(function(err, items)
+         {
+          ///sys.puts('recevied array');
+          //sys.puts('received subitems '+selection.fieldname);
+          //sys.puts(sys.inspect(items));
+          selection.cursor=items;
+          ret_group(null,true); 
+         });
+         }
+         catch(e)
+         {
+          //sys.puts('error in load_subitems');
+          //(new_group())(null,true);
+          ret_group(null,false);
+         }
+         
+        });
+        
+       });
+       //sys.puts('step 100');
+       //this.next();
+      },
+      function (err, contents)
+      {   //     sys.puts('end');
+       //if(err)
+       // sys.puts('step 200 ='+err);
+       //else 
+       // sys.puts('step 200 ='+contents);
+       err=null;
+       //sys.puts(sys.inspect(arrselections))
+       var byfield={};
+       for(var i=0,l=arrselections.length;i<l;i++)
+        byfield[arrselections[i].fieldname]=arrselections[i];
+       //if (err) { throw err; }
+       arrselections=null;
+       callback(byfield);
+       
+      }
+     );
+    }
      
     this.defaultfield= 
       {
@@ -213,17 +379,30 @@ function App()
        collections_meshup:        {},
        
        general:        { title : 'id', ftype : 'string', size : '20',  primerykey : false, page : 1, autoupdatevalue : null, /* initial value */ },
-       list:           { use: true, agregate : null, width : null, wrap : true, quicksearch: true, extsearch: false, tempalte:null /* null or custom template function or file name etc */, },
-       view:           { use: true, title: null,                 ftype: 'text', /* text / image */ },
-       edit:           { use: true, title: null, readonly:false, ftype: 'text', /* text / password / radio / checkbox / select / textarea / file / hidden */ },
+       list:           { use: true, agregate : null, width : null, ftype: 'text' /* text / image */, wrap : true, quicksearch: true, extsearch: false, tempalte:null /* null or custom template function or file name etc */, },
+       view:           { use: true, title: null,                   ftype: 'text' /* text / image */, },
+       edit:           { use: true, title: null, readonly:false,   ftype: 'text' /* text / date / password / radio / checkbox / select / textarea / html / file / hidden */, },
        add:            { use: true, defaultvalue: '', },
        multiupdate:    { use: true, },
        advancedsearch: { use: true, operator1: 'like', operator2:'like', /*  user select / > / < / >= / <= / between / like / not like / starts with / ends with */ tempalte:null /* null or custom template function orfile name etc */, },
        viewtag:        {
-        div:   { use:false, bold: false, italic : false, align: 'right', /* right / left / center */ direction: '',  /* '' / ltr / rtl */   attributes: '', /* right / left / center */ },
-        image: { height: 0, width: 0, resize: false, alt:'', align: 'right', /* right / left / center */ attributes: '', },
-        link:  { prefix: '', suffix: '', herffield: "", /* name of a field */ originalvalue: false, },
-        tempalte:null /* null or custom template function or file name etc */,
+       
+        div:   { use:false, bold: false, italic : false, align: 'right', /* right / left / center */ direction: '',  /* '' / ltr / rtl */   attributes: '' /* right / left / center */,  lookup: null,  },
+        image: { height: 0, width: 0, resize: false, alt:'', align: 'right', /* right / left / center */ attributes: '',  lookup: null, },
+        link:  { prefix: '', suffix: '', herffield: "", /* name of a field */ originalvalue: false,  lookup: null, },
+
+        text:      { size: 30, maxlength: null, attributes: '', lookup: null, }, 
+        password:  { size: 30, maxlength: null, attributes: '', }, 
+        radio:     { attributes: '', lookup: null, }, 
+        checkbox:  { attributes: '', lookup: null, },
+        select:    { size: 1,  multiple : false, attributes: '', lookup: null, }, 
+        textarea:  { cols: 48,  rows: 4, attributes: '', },
+        html:      { cols: 48,  rows: 4, attributes: '', }, 
+        file:      { size: 30, attributes: '', resizeimage: false, resizeheight: 0, resizewidth: 0, resizetype: 'jpg', /* jpg / png*/ }, 
+        hidden:    { customvalue: '', attributes: '', },
+        validation:{ validate: false, type:'' /* date/phone... */, regex:'', required:false,  errormessage: '', /* addition to error mesage */ userfunc:app.defaultvalidation, },
+        lookup:    { sameasedit:false, values: {}, /* key-value object array */ usetable: false, tablename: '', linkedfield: '', displayfield: '', displayfield2: '', orderby: '', ascdesc: '', /* '' / asc / desc */ filter: '', distinct: false, filterfiled: '', parentfiled: '', },
+        tempalte:false /* null or custom template function or file name etc */,
        },
        edittag:        {
         text:      { size: 30, maxlength: null, attributes: '', lookup: false, }, 
@@ -231,12 +410,13 @@ function App()
         radio:     { attributes: '', lookup: false, }, 
         checkbox:  { attributes: '', lookup: false, },
         select:    { size: 1,  multiple : false, attributes: '', lookup: false, }, 
-        textarea:  { cols: 48,  rows: 4, attributes: '', dhtml: false, }, 
+        textarea:  { cols: 48,  rows: 4, attributes: '', },
+        html:      { cols: 48,  rows: 4, attributes: '', }, 
         file:      { size: 30, attributes: '', resizeimage: false, resizeheight: 0, resizewidth: 0, resizetype: 'jpg', /* jpg / png*/ }, 
         hidden:    { customvalue: '', attributes: '', },
         validation:{ validate: false, type:'' /* date/phone... */, regex:'', required:false,  errormessage: '', /* addition to error mesage */ userfunc:app.defaultvalidation, },
-        lookup:    { values: {}, /* key-value object array */ usetable: false, tablename: '', linkfield: '', displayfield: '', displayfield2: '', orderby: '', ascdesc: '', /* '' / asc / desc */ filter: '', distinct: false, filterfiled: '', parentfiled: '', },
-        tempalte:null /* null or custom template function or file name etc */,
+        lookup:    {                   values: {}, /* key-value object array */ usetable: false, tablename: '', linkedfield: '', displayfield: '', displayfield2: '', orderby: '', ascdesc: '', /* '' / asc / desc */ filter: '', distinct: false, filterfiled: '', parentfiled: '', },
+        tempalte:false /* null or custom template function or file name etc */,
        },
       }  /* end filed */; 
      
@@ -246,9 +426,10 @@ function App()
       id:     _.extend(_.clone(app.defaultfield),{general:{title : 'id', pimerykey:true, ftype : 'number'},add:{use:false},edit:{use:false,readonly:true}}) ,
       normal: _.extend(_.clone(app.defaultfield),{general:{}}),
     };
+    
     this.basicmodel=
     {
-
+     modelname:"set in serving.js",
      collection:null, //handle to main mongodb collection
      links:[], //handle to main mongodb collection
      general:
@@ -329,14 +510,10 @@ function App()
      
      del: function( where, callback )
      {  
-   sys.puts( "1a"+sys.inspect(where));
       var that=this;
       that.beforedel( where , function (){
-       sys.puts( "2"+sys.inspect(where));
        that.dodel( where , function (){
-        sys.puts( "3a"+sys.inspect(where));
         that.afterdel( where , function (){
-      sys.puts( "4a"+sys.inspect(where)); 
          if(callback)callback(); } ); } ); } );     
      },
      
@@ -354,11 +531,10 @@ function App()
       var that=this;
       that.beforelist( where , function ()
       {
-          
        that.dolist( where , function (cursor)
        {  
         that.afterlist( where , cursor, function (cursor2)
-        { 
+        {
          if(callback){ callback(cursor2); }
         } );
        } );
@@ -462,12 +638,11 @@ function App()
      
      doupdate: function( where, data2 ,callback )
      {
-      sys.puts('1st');
       sys.puts(sys.inspect([where,data2]));
       this.collection.update(where,data2,function (err,doc){ 
        if(err) throw err;
-       sys.puts('sucsess');
-       sys.puts(JSON.stringify(doc) );
+       //sys.puts('sucsess');
+       //sys.puts(JSON.stringify(doc) );
        if(callback) callback(doc);
       });
  
@@ -568,8 +743,10 @@ function App()
      },
      doinit: function( data )
      {
+      app.prepare_subitems(this);
       this.addpages();
       this.addurls();
+      
      },
      dosetupfirst: function( data )
      {
@@ -577,10 +754,12 @@ function App()
      },
      dosetup: function( data )
      {
-      this.init();
+
      },
      dosetuplast: function( data )
      {
+
+      this.init();
 
      },
      // end real action functions //////////////
@@ -711,15 +890,50 @@ function App()
      // end before event functions //////////////
      pages:
      {
-      list:require('templates/default/list').page.call(this,app,this), // end page
-      add:require('templates/default/add').page.call(this,app,this), // end page
-      edit:require('templates/default/edit').page.call(this,app,this), // end page
-      del:require('templates/default/del').page.call(this,app,this), // end page
+      list:require('templates/default/list').page.call(this,app,this), 
+      add:require('templates/default/add').page.call(this,app,this), 
+      edit:require('templates/default/edit').page.call(this,app,this), 
+      del:require('templates/default/del').page.call(this,app,this), 
      },
      
         
      
     };
+    
+  this.pages=
+  {
+   admin:require('templates/default/default').page.call(this,this), 
+   website_default:require('templates/website/default').page.call(this,this), 
+   ckeditor:require('cachedfiles_page').page.call(this,this,'ckeditor','deps/ckeditor'),
+   favicon:require('cachedfile_page').page.call(this,this,'favicon.ico','favicon.ico'), 
+  };
+  
+  this.setuppages=function (callback)
+  {
+   var p,tempalte_name,template_function;
+   for(p in this.pages)
+   {
+    var page=this.pages[p];
+    //add .model reference to page
+    app.load_templates(page);
+   }
+   // adlater calling route before, route after
+   for(p in this.pages)
+   {
+    var pageurl='/'+this.pages[p].pageurl;
+    var amatch={page:this.pages[p]}
+    if(this.pages[p].urlmatch)
+    {
+     //sys.puts(this.pages[p].urlmatch+"="+pageurl);
+     amatch[this.pages[p].urlmatch]=pageurl;
+    }
+    else
+     amatch['path']=pageurl;
+    //app.url_routes.push({path:pageurl,code:function(req,res,page,callback){res.writeHead(200, { 'Content-Type': 'text/plain'});res.write('hello world');res.end();}});
+    app.url_routes.push(amatch);
+   }
+   if(callback)callback(callback);
+  }
 }
 
 var app = new App();

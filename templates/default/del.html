@@ -1,0 +1,10 @@
+<%
+this.load1('listgrid','paritials/listgrid.html');
+
+ echo+=this.listgrid(this._.replace(vars,{'model_name':'model1','model':model1,nolinks:true}));
+ this.load1('delform','paritials/delform.html');
+ 
+ echo+=this.delform(this._.replace(vars,{'model_name':'model1','model':model1,nolinks:true}));
+ 
+echo=app.templates.admin.call(page,this._.replace(vars,{'content':echo}));//this is a wrapper
+%>

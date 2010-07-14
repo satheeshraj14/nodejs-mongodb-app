@@ -1,0 +1,53 @@
+<%=model.general.title%>
+
+<table border=1>
+<tr>
+
+<%
+var filedname;
+for(filedname in model.fields)
+{
+ filed=model.fields[filedname];
+ %><td><%=filed.general.title%></td><% 
+}
+%>
+<%if(!vars.nolinks){%>
+<td> &nbsp; <a href="/<%=model.general.urlprefix+model.pages.add.pageurl%>">add</a></td> 
+<%}%>
+</tr>
+
+<?
+for(var i=0,l=<%=cursor_name%>.length,row;i<l;i++)
+{
+ row=<%=cursor_name%>[i];
+?>
+<tr>
+<%
+for(filedname in model.fields)
+{
+ filed=model.fields[filedname];
+ // show field only if it is avlible for list
+ 
+ %><td><?
+  if(row[<%=JSON.stringify(filedname) %>])
+   echo +=this.htmlencode(row[<%=JSON.stringify(filedname) %>]<% if(filedname=='_id') echo+='.toHexString()'%>);
+  else
+   echo +="&nbsp;";
+ ?></td><% 
+}
+%>
+<%if(!vars.nolinks){%>
+<td>
+&nbsp; 
+<a href="/<%=model.general.urlprefix+model.pages.edit.pageurl%>?_id=<?=row['_id'].toHexString()?>">edit</a>
+&nbsp; 
+<a href="/<%=model.general.urlprefix+model.pages.del.pageurl%>?_id=<?=row['_id'].toHexString()?>">delete</a>
+&nbsp; 
+</td>
+<%}%>
+</tr>
+<?
+}
+?>
+
+</table>

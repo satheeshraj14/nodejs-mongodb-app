@@ -1,0 +1,46 @@
+<?
+var s_subitems=<%=sub_cursors_name%>[<%=JSON.stringify(filedname)%>];
+//echo += app.sys.inspect(s_subitems.lookupinfo);
+?>
+<select name="<%=this.htmlencode(model_name+'['+filedname+']')%>" size=1>
+<?
+if(s_subitems)
+{
+ var s_value_f=(!s_subitems.lookupinfo.linkedfield)?s_subitems.lookupinfo.displayfield:s_subitems.lookupinfo.linkedfield;
+ var s_value_d1=s_subitems.lookupinfo.displayfield;
+ var s_value_d2=s_subitems.lookupinfo.displayfield2?s_subitems.lookupinfo.displayfield2:false;
+ var s_rows=s_subitems.cursor;
+ var s_value=value || "";
+ var s_sel_found=false;
+ var s_key_is_id=(s_value_f=='_id');
+ 
+ for(var i=0,l=s_rows.length;i<l;i++)
+ {
+ 
+  s_row=s_rows[i];
+  ?>
+  <option value="<?=this.htmlencode(s_key_is_id?s_row[s_value_f].toHexString():s_row[s_value_f])?>" <? if(s_row[s_value_f]==s_value) { s_sel_found=true; echo +='selected'; } ?> ><? 
+  echo += this.htmlencode(s_row[s_value_d1] ) || "";
+  if(s_value_d2)
+  {
+   echo += ', ';
+   echo += this.htmlencode(s_row[s_value_d2] ) || "";
+  }
+  if(false)
+  {
+  ?>
+  <?=s_value_f?>
+  <?=s_value_d1?>
+  <?=s_value_d2?>
+  <?
+  }
+  ?></option><?
+ }
+ if(!s_sel_found && s_value!='')
+ {
+  ?>
+  <option value="<?=this.htmlencode(s_key_is_id?s_value.toHexString():s_value)?>" <? echo +='selected';?> ><?=this.htmlencode(s_key_is_id?s_value.toHexString():s_value)?> - Not in list</option><?
+ }
+}
+?>
+</select>
