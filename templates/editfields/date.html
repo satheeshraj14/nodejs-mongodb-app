@@ -1,1 +1,5 @@
-<input type="text" name="<%=vars.name%>" value="<?=value?>" />
+<%
+if(vars.req)vars.req.template_jqueryui=true;
+if(vars.req)vars.req.template_jqueryui_date=true;
+%>
+<input type="text" class="ui_date" name="<%=this.htmlencode(model_name+'['+filedname+']')%>" value="<?= this.htmlencode(value || "") ?>" />

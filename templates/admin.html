@@ -3,42 +3,36 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>ממשק ניהול</title>
-
-<style type="text/css">
-<!--
-
--->
-</style>
-
 <%
 if(vars.req)
 {
- if(vars.req.template_jquery)
+ if(vars.req.template_jquery || vars.req.template_jqueryui)
  {
   %>
-  <script type="text/javascript" src="/ckeditor/ckeditor.js"></script>
+  <script type="text/javascript" src="/lib/jquery/js/jquery-1.4.2.min.js"></script>
   <%
  }
  if(vars.req.template_jqueryui)
  {
   %>
-  <script type="text/javascript" src="/ckeditor/ckeditor.js"></script>
-  <%
+   <link type="text/css" href="/lib/jquery/css/smoothness/jquery-ui-1.8.2.custom.css" rel="stylesheet" />	
+   <script type="text/javascript" src="/lib/jquery/js/jquery-ui-1.8.2.custom.min.js"></script><%
+  
+  if(vars.req.template_jqueryui_date){
+  %>
+  <script type="text/javascript"> 
+	$(function() {
+		$(".ui_date").datepicker();
+	});
+	</script><%}
  }
  if(vars.req.template_need_ckeditor)
  {
   %>
-  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.2/jquery-ui.min.js"></script>
-  <%
+  <script type="text/javascript" src="/lib/ckeditor/ckeditor.js"></script><%
  }
 }
 %>
-
-<script language="javascript" type="text/javascript">
-<!--
-
-//-->
-</script>
 </head>
 <body>
 <table width="100%" border="0" cellspacing="0" cellpadding="0">

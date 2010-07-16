@@ -26,3 +26,4 @@ db.open(function(p_db)
 var autoexit_watch=require('deps/nodejs-autorestart/autoexit').watch;
 autoexit_watch(__dirname,".js");
 autoexit_watch(__dirname+"/templates",".html");
+autoexit_watch(__dirname+"/templates",".css");

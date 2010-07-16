@@ -138,7 +138,8 @@ function App()
           if(typeof data2 !== 'undefined')
            _.add(data2,data1);
           if(templates_object[tempalte_name])
-           throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
+           throw new Error('template '+tempalte_name+' already exists.');
+ 
           else
            templates_object[tempalte_name]=doubletemplate.loadtemplate(app.templates_path+template_file,templates_object,data2);
          }        
@@ -149,7 +150,7 @@ function App()
        templates_object.load1=function(tempalte_name,template_file)
        {
         if(templates_object[tempalte_name])
-         throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
+         throw new Error('template '+tempalte_name+' already exists.');
         else
          templates_object[tempalte_name]=doubletemplate.loadtemplate1(app.templates_path+template_file,templates_object);
        }
@@ -163,7 +164,7 @@ function App()
          {
           template_file=templates_object.load_templates[tempalte_name];
           if(templates_object[tempalte_name])
-           throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
+           throw new Error('template '+tempalte_name+' already exists.');
           else
            templates_object[tempalte_name]=doubletemplate.loadtemplate(app.templates_path+template_file,templates_object,data)
          }
@@ -177,7 +178,7 @@ function App()
         templates_object.prepere_data(templates_object,tempalte_name,function (data)
         {
          if(templates_object[tempalte_name])
-          throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
+          throw new Error('template '+tempalte_name+' already exists.');
          else
           templates_object[tempalte_name]=doubletemplate.prepeare(templates_object.prepeare_templates[tempalte_name],'function/'+tempalte_name,templates_object,data);        
         });
@@ -191,7 +192,7 @@ function App()
        templates_object.load=function(tempalte_name,template_file)
        {
         if(templates_object[tempalte_name])
-         throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
+         throw new Error('template '+tempalte_name+' already exists.');
         else
          templates_object[tempalte_name]=doubletemplate.loadtemplate1(app.templates_path+template_file,templates_object);
        }
@@ -204,7 +205,7 @@ function App()
        {
         var template_file=templates_object.load_templates[tempalte_name];
         if(templates_object[tempalte_name])
-         throw {name:'UserException',message:'template '+tempalte_name+' already exists.'};
+         throw new Error('template '+tempalte_name+' already exists.');
         else
          templates_object[tempalte_name]=doubletemplate.loadtemplate1(app.templates_path+template_file,templates_object)
        }
@@ -398,6 +399,7 @@ function App()
         select:    { size: 1,  multiple : false, attributes: '', lookup: null, }, 
         textarea:  { cols: 48,  rows: 4, attributes: '', },
         html:      { cols: 48,  rows: 4, attributes: '', }, 
+        date:     { cols: 48,  rows: 4, attributes: '', },
         file:      { size: 30, attributes: '', resizeimage: false, resizeheight: 0, resizewidth: 0, resizetype: 'jpg', /* jpg / png*/ }, 
         hidden:    { customvalue: '', attributes: '', },
         validation:{ validate: false, type:'' /* date/phone... */, regex:'', required:false,  errormessage: '', /* addition to error mesage */ userfunc:app.defaultvalidation, },
@@ -411,7 +413,8 @@ function App()
         checkbox:  { attributes: '', lookup: false, },
         select:    { size: 1,  multiple : false, attributes: '', lookup: false, }, 
         textarea:  { cols: 48,  rows: 4, attributes: '', },
-        html:      { cols: 48,  rows: 4, attributes: '', }, 
+        html:      { cols: 48,  rows: 4, attributes: '', },
+        date:     { cols: 48,  rows: 4, attributes: '', }, 
         file:      { size: 30, attributes: '', resizeimage: false, resizeheight: 0, resizewidth: 0, resizetype: 'jpg', /* jpg / png*/ }, 
         hidden:    { customvalue: '', attributes: '', },
         validation:{ validate: false, type:'' /* date/phone... */, regex:'', required:false,  errormessage: '', /* addition to error mesage */ userfunc:app.defaultvalidation, },
@@ -423,9 +426,16 @@ function App()
 
     this.basicfields=
     {
-      id:     _.extend(_.clone(app.defaultfield),{general:{title : 'id', pimerykey:true, ftype : 'number'},add:{use:false},edit:{use:false,readonly:true}}) ,
-      normal: _.extend(_.clone(app.defaultfield),{general:{}}),
+      _id:     _.cloneextend(app.defaultfield,{general:{title : 'id', pimerykey:true, ftype : 'number'},add:{use:false},edit:{use:false,readonly:true}}) ,
+      normal: _.cloneextend(app.defaultfield,{general:{}}),
     };
+    this.basicfields.textarea = _.cloneextend(app.basicfields.normal, { edit:{ftype:'textarea'}});
+    this.basicfields.html     = _.cloneextend(app.basicfields.normal, { edit:{ftype:'html'}});
+    this.basicfields.date     = _.cloneextend(app.basicfields.normal, { edit:{ ftype:'date'}});
+    this.basicfields.number   = _.cloneextend(app.basicfields.normal, { edittag: { validation: { validate: false, type: 'number'} }, general: { ftype: 'number'} });
+    this.basicfields.lookup   = _.cloneextend(app.basicfields.normal, { edit: { ftype: 'select' }, edittag: { select: { lookup: true }, lookup: { usetable: true}} });
+    this.basicfields.keyvalue = _.cloneextend(app.basicfields.normal, { edit: { ftype: 'select' }, edittag: { select: { lookup: true }, lookup: { usetable: false}} });
+
     
     this.basicmodel=
     {
@@ -902,10 +912,11 @@ function App()
     
   this.pages=
   {
-   admin:require('templates/default/default').page.call(this,this), 
-   website_default:require('templates/website/default').page.call(this,this), 
-   ckeditor:require('cachedfiles_page').page.call(this,this,'ckeditor','deps/ckeditor'),
-   favicon:require('cachedfile_page').page.call(this,this,'favicon.ico','favicon.ico'), 
+   admin           :require('templates/default/default').page.call(this,this), 
+   website_default :require('templates/website/default').page.call(this,this), 
+   favicon         :require('cachedfile_page'  ).page.call(this,this,'favicon.ico','favicon.ico'), 
+   jquery          :require('cachedfolder_page').page.call(this,this,'lib/jquery','deps/jquery',false,/^development-bundle/),
+   ckeditor        :require('cachedfolder_page').page.call(this,this,'lib/ckeditor','deps/ckeditor',/\.(js|html|gif|png|jpg|ico|css)$/,/(^\.)|(^_)|(\.\/)|(\.svn)/),
   };
   
   this.setuppages=function (callback)
