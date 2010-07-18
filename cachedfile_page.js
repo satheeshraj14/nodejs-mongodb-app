@@ -35,7 +35,7 @@ var contentTypes = { // types from node paperboy
   "hdf": "application/x-hdf",
   "hqx": "application/mac-binhex40",
   "html": "text/html",
-  "ico": "image/vnd.microsoft.icon",
+  "ico": "image/x-icon",
   "ice": "x-conference/x-cooltalk",
   "ief": "image/ief",
   "igs": "model/iges",
@@ -178,7 +178,7 @@ this.page=function(app,url,filepath)
         }
         else
         {
-//         sys.puts('cachefile page ' + url + ' ' + ' served... "' + req.parsedurl.pathname + '"');
+         sys.puts('cachefile page ' + url + ' ' + ' served... "' + req.parsedurl.pathname + '"');
          var file=this.file;
          var expires = new Date;
          expires.setTime( expires.getTime() +  172800 ); // two days in seconds

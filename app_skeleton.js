@@ -1,4 +1,4 @@
-var _ = require('merger');  //  lets do: _.extend(same,otherobjexts),  _.clone(obj) - creates new reference, see source to understand // 
+var _ = require('deps/nodejs-clone-extend/merger');  //  lets do: _.extend(same,otherobjexts),  _.clone(obj) - creates new reference, see source to understand // 
 var sys = require('sys');
  var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //load double teplate module
 var httputils = require('httputils');

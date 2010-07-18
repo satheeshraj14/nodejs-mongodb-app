@@ -69,3 +69,62 @@ this.redirect = function(req, res, url, callback, code )
  res.end();
  if(callback)callback();
 };
+
+
+function parseCookie(str)
+{
+    var obj = {},
+        pairs = str.split(/[;,] */);
+    for (var i = 0, len = pairs.length; i < len; ++i) {
+        var pair = pairs[i],
+            eqlIndex = pair.indexOf('='),
+            key = pair.substr(0, eqlIndex).trim().toLowerCase(),
+            val = pair.substr(++eqlIndex, pair.length).trim();
+        // Quoted values
+        if (val[0] === '"') {
+            val = val.slice(1, -1);
+        }
+        // Only assign once
+        if (obj[key] === undefined) {
+            obj[key] = querystring.unescape(val, true);
+        }
+    }
+    return obj;
+} this.parseCookie=parseCookie; 
+
+function cookie(req)
+{
+ if(req.headers.cookie)
+ {
+  req.parsedcookie=parseCookie(req.headers.cookie);
+  return req.parsedcookie;
+ }
+ return {};
+};this.cookie = cookie;
+
+
+function session_start(req,header)
+{
+ var parsedcookie=cookie(req),sid;  // cookie names are lowercase             
+ if(parsedcookie['sid'])
+ {
+  req.session_id=parsedcookie['sid'];
+ }
+ else
+ {
+  sid=(((new Date()).getTime()*10000)+(Math.abs((Math.random() * 9999) | 0)))
+  req.session_id=sid;
+  header['Set-Cookie']='sid="'+sid+'"; path=/'+(req.secure?'; secure:':'');
+ }       
+ return parsedcookie;     
+} this.session_start=session_start; 
+
+function session_save(req)
+{
+ if(req.session_id);
+} this.session_save=session_save;
+
+function session_load(req)
+{
+ if(req.session_id);
+} this.session_load=session_load; 

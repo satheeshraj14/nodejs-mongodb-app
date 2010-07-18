@@ -95,7 +95,7 @@ var contentTypes = { // types from node paperboy
   "hdf": "application/x-hdf",
   "hqx": "application/mac-binhex40",
   "html": "text/html",
-  "ico": "image/vnd.microsoft.icon",
+  "ico": "image/x-icon",
   "ice": "x-conference/x-cooltalk",
   "ief": "image/ief",
   "igs": "model/iges",
