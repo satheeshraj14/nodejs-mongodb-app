@@ -51,6 +51,7 @@ function App()
     
     this.templates= // master templates
     {
+     pagefilename:__filename,
      load_templates:  // texts treated as templates filenames to load and prepeare
      {
       admin:"admin.html",
@@ -130,7 +131,7 @@ function App()
        templates_object.load=function(tempalte_name,template_file,data2)
        {
         // data1 might need clone here , but seems not needed because wil never changed from inside template
-        templates_object.prepere_data(tempalte_name,tempalte_name,
+        templates_object.prepere_data(templates_object,tempalte_name,
          function(data1)
          {
           if(typeof data2 === 'undefined' && typeof data1 !== 'undefined')
@@ -138,10 +139,12 @@ function App()
           if(typeof data2 !== 'undefined')
            _.add(data2,data1);
           if(templates_object[tempalte_name])
-           throw new Error('template '+tempalte_name+' already exists.');
- 
+           throw new Error('template '+(templates_object.pagefilename?templates_object.pagefilename:'')+' - '+tempalte_name+' already exists.');
           else
+          {
+           //console.log('load template1 '+(templates_object.pagefilename?templates_object.pagefilename:'')+' - '+tempalte_name+'.');
            templates_object[tempalte_name]=doubletemplate.loadtemplate(app.templates_path+template_file,templates_object,data2);
+          }
          }        
         );
        }
@@ -150,39 +153,65 @@ function App()
        templates_object.load1=function(tempalte_name,template_file)
        {
         if(templates_object[tempalte_name])
-         throw new Error('template '+tempalte_name+' already exists.');
+         throw new Error('template '+(templates_object.pagefilename?templates_object.pagefilename:'')+tempalte_name+' already exists.');
         else
+        {
          templates_object[tempalte_name]=doubletemplate.loadtemplate1(app.templates_path+template_file,templates_object);
+         //console.log('load template2 '+(templates_object.pagefilename?templates_object.pagefilename:'')+' - '+tempalte_name+'.');
+        }
        }
        
        var data,tempalte_name,template_file;
        // load templates
+       
        if(templates_object.load_templates)
-       for(tempalte_name in templates_object.load_templates)
+       _.foreach(templates_object.load_templates,
+       function (template_file,tempalte_name)
        {
-        templates_object.prepere_data(templates_object,tempalte_name, function(data)
+         templates_object.prepere_data(templates_object,tempalte_name, function(data)
          {
-          template_file=templates_object.load_templates[tempalte_name];
           if(templates_object[tempalte_name])
-           throw new Error('template '+tempalte_name+' already exists.');
+           throw new Error('template3 '+(templates_object.pagefilename?templates_object.pagefilename:'')+' - '+tempalte_name+' already exists.'+' model:'+(templates_object.model?templates_object.model.modelname:''));
           else
+          {
+           /*
+           //// debug template redifinition: (uncomment then recomment) 
+           if((templates_object.pagefilename?templates_object.pagefilename:'')=='/var/www/nodejs-mongodb-app/templates/default/add.js'&& tempalte_name=='content')
+           {
+            try
+            { 
+             throw new Error('load_template trace '+(templates_object.pagefilename?templates_object.pagefilename:'')+' - '+tempalte_name+' model:'+(templates_object.model?templates_object.model.modelname:''));
+            }
+            catch (e) { console.log(e.stack); }
+           }
+           //// end debug template redifinition:
+           */ 
+           //console.log('load template3 '+(templates_object.pagefilename?templates_object.pagefilename:'')+' - '+tempalte_name+' model:'+(templates_object.model?templates_object.model.modelname:''));
            templates_object[tempalte_name]=doubletemplate.loadtemplate(app.templates_path+template_file,templates_object,data)
+          }
          }
         );
-       }
+       },this);
+       
                 
        // prepeare function templates
        if(templates_object.prepeare_templates)
-       for(tempalte_name in templates_object.prepeare_templates)
-       {
+       _.foreach(templates_object.prepeare_templates,
+       function (template_file,tempalte_name)
+       { 
         templates_object.prepere_data(templates_object,tempalte_name,function (data)
         {
          if(templates_object[tempalte_name])
-          throw new Error('template '+tempalte_name+' already exists.');
+          throw new Error('template '+(templates_object.pagefilename?templates_object.pagefilename:'')+' - '+tempalte_name+' already exists.');
          else
-          templates_object[tempalte_name]=doubletemplate.prepeare(templates_object.prepeare_templates[tempalte_name],'function/'+tempalte_name,templates_object,data);        
+         {
+          //console.log('load template4 '+(templates_object.pagefilename?templates_object.pagefilename:'')+' - '+tempalte_name+'.');
+          templates_object[tempalte_name]=doubletemplate.prepeare(template_file,'function/'+tempalte_name,templates_object,data);
+         }
         });
        }
+       ,this);
+       
     }
     
     this.load_templates1 = function (templates_object)
@@ -194,21 +223,28 @@ function App()
         if(templates_object[tempalte_name])
          throw new Error('template '+tempalte_name+' already exists.');
         else
-         templates_object[tempalte_name]=doubletemplate.loadtemplate1(app.templates_path+template_file,templates_object);
+        {
+          //console.log('load template5 '+(templates_object.pagefilename?templates_object.pagefilename:'')+' - '+tempalte_name+'.');
+          templates_object[tempalte_name]=doubletemplate.loadtemplate1(app.templates_path+template_file,templates_object);
+        }
        }
        templates_object._=_;
        
        var tempalte_name;
        // load templates
        if(templates_object.load_templates)
-       for(tempalte_name in templates_object.load_templates)
+       _.foreach(templates_object.load_templates,
+       function (template_file,tempalte_name)
        {
         var template_file=templates_object.load_templates[tempalte_name];
         if(templates_object[tempalte_name])
          throw new Error('template '+tempalte_name+' already exists.');
         else
-         templates_object[tempalte_name]=doubletemplate.loadtemplate1(app.templates_path+template_file,templates_object)
-       }
+         {
+          //console.log('load template6 '+(templates_object.pagefilename?templates_object.pagefilename:'')+' - '+tempalte_name+'.');
+          templates_object[tempalte_name]=doubletemplate.loadtemplate1(app.templates_path+template_file,templates_object)
+         }
+       },this);
     }
     
     this.load_app_templates=function (callback)
@@ -226,9 +262,9 @@ function App()
     }
     
     
-    this.prepare_subitems = function (main_model)
+    this.prepare_subitems_lists = function (main_model)
     {
-     
+     //sys.puts(sys.inspect(main_model));
      var operation,operations=['edit','view'];
      var operations_copy={'list':'view','add':'edit','multiupdate':'edit','advancedsearch':'edit'};
      var arrselections,fieldname,havelookup,lookupinfo,field,operations_type;
@@ -282,6 +318,8 @@ function App()
        }
        else
        {
+        //sys.puts(operations_type);
+        //sys.puts(sys.inspect(field));
         havelookup=field.edittag[ field[operations_type].ftype  ].lookup?true:false;
         if(havelookup)
         {
@@ -308,9 +346,164 @@ function App()
      //sys.puts(sys.inspect(main_model.prep_subitems));
     }
 
-
-    this.load_subitems = function (main_model,operation,callback)
+    this.fake_load_data= function(items_to_load,retdata,callback)
     {
+             var call_count=0;
+             if(!items_to_load)
+             {
+              retdata={};
+              callback();  // don't create group_slots if the array is empty otherwise it will not go to the next step
+             }
+             else
+             {
+              for(var items_to_load_key2 in items_to_load)
+              {
+               if(items_to_load.hasOwnProperty(items_to_load_key2))
+               {
+                var model_to_load2=items_to_load[items_to_load_key2];
+                call_count++;
+                (function(model_to_load,items_to_load_key) {
+                process.nextTick(
+                function () {
+                 var loaded_subitems={},items={};
+
+                     //sys.puts(sys.inspect(model_to_load))
+                     retdata['error_name']                      = 'error_'       +items_to_load_key;
+                     retdata['error_'      +items_to_load_key]   = null;
+                     
+                     retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
+                     retdata['cursor_'      +items_to_load_key]  = items;
+                     
+                     retdata['model_name']                      = 'model_'       +items_to_load_key;
+                     retdata['model_'       +items_to_load_key]  = model_to_load.model;
+                     
+                     retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
+                     retdata['sub_cursors_' +items_to_load_key]  = loaded_subitems;
+                     //sys.puts(sys.inspect(   items ));
+                     call_count--;  if(call_count==0)     callback();
+                  
+                 
+                 //fs.readFile(__filename, group_slot);
+
+                }); // next tick
+                })(model_to_load2,items_to_load_key2);// subfunction
+               }; // if has own
+              } //for in
+             } // else of empty
+       
+    };
+    
+    this.load_data= function(items_to_load,retdata,callback)
+    {
+             var call_count=0;
+             if(!items_to_load)
+             {
+              retdata={};
+              callback();  // don't create group_slots if the array is empty otherwise it will not go to the next step
+             }
+             else
+             {
+              for(var items_to_load_key2 in items_to_load)
+              {
+               if(items_to_load.hasOwnProperty(items_to_load_key2))
+               {
+                var model_to_load2=items_to_load[items_to_load_key2];
+                call_count++;
+                (function(model_to_load,items_to_load_key) {
+                //sys.puts("top model---------------************************************");
+                //sys.puts(sys.inspect(model_to_load,0));
+                process.nextTick(
+                function () {
+                 var loaded_subitems={},items={};
+                 if(model_to_load.load_subitems && model_to_load.load_items)
+                 { // multi load double
+                   app.load_subitems( model_to_load.model , model_to_load.column_set , function (loaded_subitems)
+                   {
+                   model_to_load.model.list(model_to_load.where,function (cursor)
+                   {
+                   cursor.toArray(function(err, items)
+                   {
+                     //sys.puts("inner model1---------------+++++++++++++++++++++++++++++++++");
+                     //sys.puts(sys.inspect(model_to_load,0));
+
+                     retdata['error_name']                      = 'error_'       +items_to_load_key;
+                     retdata['error_'      +items_to_load_key]   = err;
+                     
+                     retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
+                     retdata['cursor_'      +items_to_load_key]  = items;
+                     
+                     retdata['model_name']                      = 'model_'       +items_to_load_key;
+                     retdata['model_'       +items_to_load_key]  = model_to_load.model;
+                     
+                     retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
+                     retdata['sub_cursors_' +items_to_load_key]  = loaded_subitems;
+                     //sys.puts(sys.inspect(   items ));
+                     call_count--;  if(call_count==0)     callback();
+                   });//toarray
+                   });//list
+                   });//subitems2
+                 }
+                 else if(model_to_load.load_subitems)
+                 { // multi load
+                   app.load_subitems( model_to_load.model , model_to_load.column_set , function (loaded_subitems)
+                   {
+                     //sys.puts("inner model2---------------+++++++++++++++++++++++++++++++++");
+                     //sys.puts(sys.inspect(model_to_load,0));
+                     //sys.puts(sys.inspect(model_to_load))
+                     retdata['error_name']                      = 'error_'       +items_to_load_key;
+                     retdata['error_'      +items_to_load_key]   = null;
+                     
+                     retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
+                     retdata['cursor_'      +items_to_load_key]  = items;
+                     
+                     retdata['model_name']                      = 'model_'       +items_to_load_key;
+                     retdata['model_'       +items_to_load_key]  = model_to_load.model;
+                     
+                     retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
+                     retdata['sub_cursors_' +items_to_load_key]  = loaded_subitems;
+                     //sys.puts(sys.inspect(   items ));
+                     call_count--;  if(call_count==0)     callback();
+                   });//subitems2
+                 }
+                 else // load list
+                 { // single load 
+                   model_to_load.model.list(model_to_load.where,function (cursor)
+                   {
+                   cursor.toArray(function(err, items)
+                   {
+                     //sys.puts("inner model3---------------+++++++++++++++++++++++++++++++++");
+                     //sys.puts(sys.inspect(model_to_load,0));
+                     //sys.puts(sys.inspect(model_to_load))
+                     retdata['error_name']                      = 'error_'       +items_to_load_key;
+                     retdata['error_'      +items_to_load_key]   = err;
+                     
+                     retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
+                     retdata['cursor_'      +items_to_load_key]  = items;
+                     
+                     retdata['model_name']                      = 'model_'       +items_to_load_key;
+                     retdata['model_'       +items_to_load_key]  = model_to_load.model;
+                     
+                     retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
+                     retdata['sub_cursors_' +items_to_load_key]  = loaded_subitems;
+                     //sys.puts("inner retdata3---------------+++++++++++++++++++++++++++++++++");
+                     //sys.puts(sys.inspect(retdata,0));
+                     //sys.puts(sys.inspect(   items ));
+                     call_count--;  if(call_count==0)     callback();
+                   });//toarray
+                   });//list
+                 }
+                 //fs.readFile(__filename, group_slot);
+
+                }); // next tick
+                })(model_to_load2,items_to_load_key2);// subfunction
+               }; // if has own
+              } //for in
+             } // else of empty
+       
+    };
+    
+    this.load_subitems = function (main_model,operation,callback)
+    {        //shoud i add static support ? app.load_subitems( page.model , 'static/cached/on change of a specific model(onchange is multi process unsupported)') ? <<should i add this later? 
      if(main_model.prep_subitems[operation].length==0)callback({});
      //sys.puts(main_model.modelname+','+operation);
      //sys.puts(main_model.modelname+"|"+operation+"| "+sys.inspect(main_model.prep_subitems[operation]));     
@@ -731,7 +924,8 @@ function App()
       {
        var page=this.pages[p];
        //add .model reference to page
-       page.model=this;      
+       page.model=this;
+       if(this.modelname=='t1_organization')  console.log(" addpages page "+p);      
        app.load_templates(page);
 
       }
@@ -753,7 +947,7 @@ function App()
      },
      doinit: function( data )
      {
-      app.prepare_subitems(this);
+      app.prepare_subitems_lists(this);
       this.addpages();
       this.addurls();
       

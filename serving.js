@@ -5,7 +5,15 @@ var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //lo
 //var doubletemplate=te.doubletemplate; // export double template function to global
 var fs = require('fs');    // allaws to open files
 var app=require('app_skeleton').app; // include  basic definision of a model and a filed in a model
-var modules=[  require('module_pijimi'), ]; // include  basic definision of a model and a filed in a model
+
+if(process.argv[3])
+{
+ var modules=[  require(process.argv[3]) ];  // same as below but dynamicaly for testing only
+}
+else
+{
+ var modules=[  require( 'module_pijimi'), ]; // include  basic definision of a model and a filed in a model
+}
 
 //sys.puts('test');
 

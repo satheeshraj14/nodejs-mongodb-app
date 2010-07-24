@@ -148,6 +148,7 @@ this.page=function(app,url,filepath)
 {
  var page=
      {
+      pagefilename:__filename,
       pageurl:url, //prefix name
       urlmatch:'pathbegins', //urlmatch: path / pathbegins 
       

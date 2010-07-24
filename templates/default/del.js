@@ -4,7 +4,8 @@ this.page=function(app,model)
 {
  var page=
      {
-      pageurl:'/del.jsp',
+       pagefilename:__filename,
+       pageurl:'/del.jsp',
        // add error on existing function       
        load_templates:  // strings treated as template filenames to load and prepeare
        {
@@ -25,7 +26,18 @@ this.page=function(app,model)
        
        prepere_data:function (page,template_name,callback)
        {
-        callback({'page':page,'app':app, model_name:'model1', 'model1':page.model,cursor_name:'cursor1' });;
+          var data1={'page':page, 'app':app, 'req':{}, }         
+          app.fake_load_data(
+           {
+            'del': {  model:page.model  , column_set:'list' , where:null,  load_items:true,   load_subitems:false   },
+           }
+          ,
+           data1
+          ,
+          function ()
+          { 
+            callback(data1);
+          });
        },
        
        main:function (req,res,page,callback)
@@ -38,13 +50,13 @@ this.page=function(app,model)
           var updateok=false;
           if(data)
           {
-           if(data['model1'])
+           if(data['model_del'])
            {
-            if(data['model1']._id)
+            if(data['model_del']._id)
             {
 
-             var where={'_id':app.ObjectID.createFromHexString(data['model1']['_id'])};
-             delete data['model1']['_id'];
+             var where={'_id':app.ObjectID.createFromHexString(data['model_del']['_id'])};
+             delete data['model_del']['_id'];
              // sys.puts( sys.inspect(where)); 
              page.model.del(where,function (where ,datawithkey)
              {
@@ -56,9 +68,8 @@ this.page=function(app,model)
              if(!updateok)
              {
               res.writeHead(200, { 'Content-Type': 'text/html'});        
-              data1={'page':page,'app':app, model_name:'model1', 'model1':page.model, 'content': sys.inspect(where) };
-              res.write(      page.content.call(page,data1)        );
-              res.end();
+              data1={'page':page,'app':app, 'content': sys.inspect(where) };
+              page.content.call(page,data1,function(echo){res.write(echo);res.end(); });
              }
              return;
             }
@@ -67,8 +78,7 @@ this.page=function(app,model)
           
           res.writeHead(200, { 'Content-Type': 'text/html'});
           data1={'page':page,'app':app,'content':'לא התקבל ID' + sys.inspect(data) };
-          res.write( page.content.call(page,data1) );
-          res.end();
+          page.content.call(page,data1,function(echo){res.write(echo);res.end(); });
 
          });
         }
@@ -76,25 +86,36 @@ this.page=function(app,model)
         {
          if(req.parsedurl.query['_id'])
          {
-          page.model.list({'_id':app.ObjectID.createFromHexString(req.parsedurl.query['_id'])},function (cursor)
-          {
-           cursor.toArray(function(err, items)
+         
+         
+          var data1={'page':page, 'app':app, 'req':req, }         
+          app.load_data(
            {
-            res.writeHead(200, { 'Content-Type': 'text/html'});        
-            data1={'page':page,'app':app,cursor_name:'cursor1','cursor1': items, model_name:'model1', 'model1':page.model };
-            res.write( page.del.call(page,data1) );
-            res.end();
-            // sys.puts();
-            //sys.puts(sys.inspect(   items ));
-           });
-          });
+            'del': {  model:page.model                      , column_set:'list' , where:{'_id':app.ObjectID.createFromHexString(req.parsedurl.query['_id'])},  load_items:true,   load_subitems:false   },
+            //'user':     {  model:app.models.t2_users      , column_set:'view'  , where:null            ,  load_items:false,  load_subitems:true    },
+           }
+          ,
+           data1
+          ,
+           function ()
+           {
+             var header= { 'Content-Type': 'text/html'};
+             app.httputils.session_start(req,header);             
+             res.writeHead(200, header);
+             //res.write(sys.inspect(   data1 ));        
+             page.del.call(page,data1,function(echo){res.write(echo);res.end(); });
+             //sys.puts(sys.inspect(   data1 ));
+           }
+          );
+          
+          
          }
          else
          {
            res.writeHead(200, { 'Content-Type': 'text/html'});
            data1={'page':page,'app':app,'content':'לא התקבל ID' + sys.inspect(req.parsedurl) + sys.inspect(app.ObjectID.createFromHexString(req.parsedurl.query['_id'])) };
-           res.write( page.content.call(page,data1) );
-           res.end();
+           page.content.call(page,data1,function(echo){res.write(echo);res.end(); });
+           
          }
          //res.writeHead(200, { 'Content-Type': 'text/html'});        
          //data1={'page':page,'app':app, model_name:'model1', 'model1':page.model };

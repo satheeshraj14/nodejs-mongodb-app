@@ -209,6 +209,7 @@ this.page=function(app,url,dirpath,reg_include,reg_exclude,debugit)
  if(typeof debugit==='undefined')debugit=false;
  var page=
      {
+      pagefilename:__filename,
       pageurl:url, //prefix name
       urlmatch:'pathbegins', //urlmatch: path / pathbegins 
       

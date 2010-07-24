@@ -1,3 +1,6 @@
+// process.argv[2] = port (optional)
+// process.argv[3] = other main module (optional), modules should be specified staticaly static or by file list  but anyways i have my proprietery website and and the example i want them both running so ican share good examples
+
 require.paths.unshift(__dirname); //make local paths accecible
 //  require('filename')  // include file - filename is without '.js' extention!!!
 
@@ -16,8 +19,8 @@ db.open(function(p_db)
   function()
   {
    var server_handler_function=app.dynamicallyCreateServerHandlerFunction();
-   http.createServer(server_handler_function).listen(app.server.port);
-   sys.puts((new Date).toTimeString()+' Server running at http://127.0.0.1:'+app.server.port+'/');
+   http.createServer(server_handler_function).listen(process.argv[2] || app.server.port);
+   sys.puts((new Date).toTimeString()+' Server running at http://127.0.0.1:'+(process.argv[2] || app.server.port)+'/');
   });
 });
 

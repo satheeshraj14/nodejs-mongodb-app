@@ -4,7 +4,8 @@ this.page=function(app,model)
 {
  var page=
      {
-      pageurl:'/edit.jsp',
+       pagefilename:__filename,
+       pageurl:'/edit.jsp',
        // add error on existing function       
        load_templates:  // strings treated as template filenames to load and prepeare
        {
@@ -25,10 +26,18 @@ this.page=function(app,model)
        
        prepere_data:function (page,template_name,callback)
        {
-        var loaded_subitems={};
-        //app.load_subitems( page.model , 'add' , function (loaded_subitems) {  
-        callback({'page':page,'app':app, 'req':{}, model_name:'model1', 'model1':page.model,cursor_name:'cursor1', sub_cursors_name:'sub_cursors1', sub_cursors1: loaded_subitems  });
-        //});
+          var data1={'page':page, 'app':app, 'req':{}, }         
+          app.fake_load_data(
+           {
+            'edit': {  model:page.model                 , column_set:'edit'  , where:null            , load_items:false,  load_subitems:true    },
+           }
+          ,
+           data1
+          ,
+          function ()
+          {
+            callback(data1);
+          });
        },
        
        main:function (req,res,page,callback)
@@ -41,20 +50,20 @@ this.page=function(app,model)
           var updateok=false;
           if(data)
           {
-           if(data['model1'])
+           if(data['model_edit'])
            {
-            if(data['model1']._id)
+            if(data['model_edit']._id)
             {
 
              var where={'_id':app.ObjectID.createFromHexString(data['model1']['_id'])};
-             delete data['model1']['_id'];
+             delete data['model_edit']['_id'];
 
-             page.model.update(where,data['model1'],function (where ,datawithkey)
+             page.model.update(where,data['model_edit'],function (where ,datawithkey)
              { 
               updateo=true; 
               app.httputils.redirect(req,res,'/'+page.model.general.urlprefix+page.model.pages.list.pageurl);
-              
              });
+             
              if(!updateok)
              {
               res.writeHead(200, { 'Content-Type': 'text/html'});        
@@ -78,20 +87,33 @@ this.page=function(app,model)
         {
          if(req.parsedurl.query['_id'])
          {
-          app.load_subitems( page.model , 'edit' , function (loaded_subitems)  {
-           page.model.list({'_id':app.ObjectID.createFromHexString(req.parsedurl.query['_id'])},function (cursor)
+         
+        
+
+          var data1={'page':page, 'app':app, 'req':req, }         
+          app.load_data(
            {
-            cursor.toArray(function(err, items)
-            {
-             res.writeHead(200, { 'Content-Type': 'text/html'});        
-             data1={'page':page,'app':app, 'req':req, cursor_name:'cursor1','cursor1': items, model_name:'model1', 'model1':page.model, sub_cursors_name:'sub_cursors1', sub_cursors1: loaded_subitems  };
-             res.write( page.edit.call(page,data1) );
-             res.end();
-             // sys.puts();
-             //sys.puts(sys.inspect(   items ));
-            });
-           });
-          });
+            'edit': {  model:page.model                 , column_set:'view'  , where:{'_id':app.ObjectID.createFromHexString(req.parsedurl.query['_id'])}            , load_items:true,  load_subitems:true    },
+           }
+          ,
+           data1
+          ,
+           function ()
+           {
+             var header= { 'Content-Type': 'text/html'};
+             //app.httputils.session_start(req,header);             
+             res.writeHead(200, header);
+             //res.write(sys.inspect(   data1 ));        
+             page.edit.call(page, data1 ,function (echo){
+              res.write(echo);
+              res.end();
+             });
+             //sys.puts(sys.inspect(   data1 ));
+           }
+          );
+
+          
+          
          }
          else
          {

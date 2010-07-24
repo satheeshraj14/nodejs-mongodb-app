@@ -4,7 +4,8 @@ this.page=function(app,model)
 {
  var page=
      {
-      pageurl:'/add.jsp',
+       pagefilename:__filename,
+       pageurl:'/add.jsp',
        // add error on existing function       
        load_templates:  // strings treated as template filenames to load and prepeare
        {
@@ -25,11 +26,23 @@ this.page=function(app,model)
        
        prepere_data:function (page,template_name,callback)
        {
-        //shoud i add static support ? app.load_subitems( page.model , 'static'?<<should i add this later? , function (loaded_subitems) {
-        var loaded_subitems={};
-        //app.load_subitems( page.model , 'add' , function (loaded_subitems) {  
-         callback( {'page':page,'app':app, 'req':{}, model_name:'model1', 'model1':page.model, sub_cursors_name:'sub_cursors1', sub_cursors1: loaded_subitems } );
-        //});
+          //sys.puts("add page-------------///////////////////////////");
+          //sys.puts(sys.inspect(page ,0));
+            
+          var data1={'page':page, 'app':app, 'req':{}, }         
+          app.fake_load_data(
+           {
+            'add': {  model:page.model                 , column_set:'view'  , where:null            , load_items:false,  load_subitems:true    },
+           }
+          ,
+           data1
+          ,
+          function ()
+          {
+            //sys.puts("add data1-------------///////////////////////////");
+            //sys.puts(sys.inspect(data1.model_add,0));
+            callback(data1);
+          });
        },
        
        main:function (req,res,page,callback)
@@ -38,7 +51,7 @@ this.page=function(app,model)
         if(req.method==='POST')
          app.httputils.post(req,res,function (data)
          {
-          page.model.add(data['model1'],function (datawithkey)
+          page.model.add(data['model_add'],function (datawithkey)
           {
            app.httputils.redirect(req,res,'/'+page.model.general.urlprefix+page.model.pages.list.pageurl);
            //res.writeHead(200, { 'Content-Type': 'text/html'});        
@@ -49,16 +62,27 @@ this.page=function(app,model)
          });
         else
         {
-         res.writeHead(200, { 'Content-Type': 'text/html'});
-         var loaded_subitems={};
-         app.load_subitems( page.model , 'add' , function (loaded_subitems)  {
-          //sys.puts(sys.inspect(page));
-          data1={'page':page,'app':app, 'req':req, model_name:'model1', 'model1':page.model, sub_cursors_name:'sub_cursors1', sub_cursors1: loaded_subitems };
-          page.add.call(page,data1,function (echo){
-           res.write(echo);
-           res.end();
-          } );
-         });
+          var data1={'page':page, 'app':app, 'req':req, }         
+          app.load_data(
+           {
+            'add': {  model:page.model                 , column_set:'view'  , where:null            , load_items:false,  load_subitems:true    },
+           }
+          ,
+           data1
+          ,
+           function ()
+           {
+             var header= { 'Content-Type': 'text/html'};
+             app.httputils.session_start(req,header);             
+             res.writeHead(200, header);
+             //res.write(sys.inspect(   data1 ));        
+             page.add.call(page, data1 ,function (echo){
+              res.write(echo);
+              res.end();
+             });
+             //sys.puts(sys.inspect(   data1 ));
+           }
+          );
         }
         return true;
        },

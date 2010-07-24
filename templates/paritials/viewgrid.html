@@ -1,5 +1,22 @@
-<%/* items,data */%>
-<table>
-<tr><td>title</td></tr>
-<tr><td>item</td></tr>
+<%=model.general.title%>
+<?
+var row=<%=cursor_name%>[0];
+var value;
+?>
+<table border=1>
+<%
+var filedname;
+for(filedname in model.fields)
+{
+ filed=model.fields[filedname];
+ %>
+ <tr>
+ <td><%=filed.general.title%></td>
+ <td><?=row[<%=JSON.stringify(filedname) %>]<% if(filedname=='_id') echo+='.toHexString()'%> || '' ?></td> 
+ </tr>
+ <% 
+}
+%>
+<tr><td></td><td><a href="/<%=model.general.urlprefix+model.pages.list.pageurl%>">back to list</a></td></tr>
 </table>
+<small>id: <?=row['_id'].toHexString()?></small>

@@ -2,6 +2,7 @@ this.page=function(app)
 {
  var page=
      {
+      pagefilename:__filename,
       pageurl:'admin',
        // add error on existing function       
        load_templates:  // strings treated as template filenames to load and prepeare

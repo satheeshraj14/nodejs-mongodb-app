@@ -2,6 +2,8 @@ this.page=function(app,model)
 {
  var page=
      {
+      pagefilename:__filename,
+       //'model':model,
       pageurl:'/list.jsp',
        // add error on existing function       
        load_templates:  // strings treated as template filenames to load and prepeare
@@ -22,33 +24,55 @@ this.page=function(app,model)
        
        prepere_data:function (page,template_name,callback)
        {
-       var loaded_subitems={};
-        //app.load_subitems( page.model , 'list' , function ()
-        //{
-         callback({'page':page,'app':app, model_name:'model1', 'model1':page.model });
-        //});
+          var data1={'page':page, 'app':app, 'req':{}, }         
+          app.fake_load_data(
+           {
+            'list': {  model:page.model  , column_set:'list' , where:null,  load_items:true,   load_subitems:false   },
+           }
+          ,
+           data1
+          ,
+          function ()
+          { 
+            callback(data1);
+          });
        },
        
        main:function (req,res,page,callback)
        {
-         var loaded_subitems={};
-        //app.load_subitems( page.model , 'list' , function (loaded_subitems){
-         //var currentpage=request.querystring['page']
-         page.model.list(null,function (cursor)
+        //var currentpage=request.querystring['page']
+         if(false) //req.parsedurl.query['_id']
          {
-          cursor.toArray(function(err, items)
-          {
-           res.writeHead(200, { 'Content-Type': 'text/html'});        
-           data1={'page':page,'app':app,cursor_name:'cursor1','cursor1': items, model_name:'model1', 'model1':page.model, sub_cursors_name:'sub_cursors1', sub_cursors1: loaded_subitems };
-           res.write( page.list.call(page,data1) );
-           res.end();
-           // sys.puts();
-           //sys.puts(sys.inspect(   items ));
-          });
-         });
-        //});
-         
-       return true;
+           //res.writeHead(200, { 'Content-Type': 'text/html'});
+           //data1={'page':page,'app':app,'content':'No ID' + sys.inspect(req.parsedurl) + sys.inspect(app.ObjectID.createFromHexString(req.parsedurl.query['_id'])) };
+           //res.write( page.content.call(page,data1) );
+           ///res.end();
+           sys.puts('imposible false');
+         }
+         else
+         {
+          var data1={'page':page, 'app':app, 'req':req, }         
+          app.load_data(
+           {
+            'list': {  model:page.model  , column_set:'list' , where:null,  load_items:true,   load_subitems:false   },
+            //'user':     {  model:app.models.t2_users      , column_set:'view'  , where:null            ,  load_items:false,  load_subitems:true    },
+           }
+          ,
+           data1
+          ,
+           function ()
+           {
+             var header= { 'Content-Type': 'text/html'};
+             app.httputils.session_start(req,header);             
+             res.writeHead(200, header);
+             //res.write(sys.inspect(   data1 ));        
+             res.write( page.list.call(page,data1) );
+             res.end();
+             //sys.puts(sys.inspect(   data1 ));
+           }
+          );
+        }
+        return true;
        },
       };
       
