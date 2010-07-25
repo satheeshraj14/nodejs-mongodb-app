@@ -12,7 +12,7 @@ if(process.argv[3])
 }
 else
 {
- var modules=[  require( 'module_pijimi'), ]; // include  basic definision of a model and a filed in a model
+ var modules=[  require('module_pijimi'), ]; // include  basic definision of a model and a filed in a model
 }
 
 //sys.puts('test');
