@@ -1,6 +1,5 @@
 <?
 var s_subitems=<%=sub_cursors_name%>[<%=JSON.stringify(filedname)%>];
-//echo += app.sys.inspect(s_subitems.lookupinfo);
 ?>
 <select name="<%=this.htmlencode(model_name+'['+filedname+']')%>" size=1>
 <?
@@ -19,7 +18,9 @@ if(s_subitems)
  
   s_row=s_rows[i];
   ?>
-  <option value="<?=this.htmlencode(s_key_is_id?s_row[s_value_f].toHexString():s_row[s_value_f])?>" <? if(s_row[s_value_f]==s_value) { s_sel_found=true; echo +='selected'; } ?> ><? 
+  <option value="<?=this.htmlencode(s_key_is_id?s_row[s_value_f].toHexString():s_row[s_value_f])?>" <? 
+  
+   if( s_row[s_value_f] == s_value || (s_row[s_value_f].id&&s_value.id? s_row[s_value_f].id==s_value.id:false ) ) { s_sel_found=true; echo +='selected'; } ?> ><? 
   echo += this.htmlencode(s_row[s_value_d1] ) || "";
   if(s_value_d2)
   {
@@ -38,8 +39,8 @@ if(s_subitems)
  }
  if(!s_sel_found && s_value!='')
  {
-  ?>
-  <option value="<?=this.htmlencode(s_key_is_id?s_value.toHexString():s_value)?>" <? echo +='selected';?> ><?=this.htmlencode(s_key_is_id?s_value.toHexString():s_value)?> - Not in list</option><?
+  ?><option value="<?=this.htmlencode(s_key_is_id&&s_value.toHexString?s_value.toHexString():s_value)?>" <? echo +='selected';?> ><?=this.htmlencode(s_key_is_id&&s_value.toHexString?s_value.toHexString():s_value)?> - Not in list</option><?
+  
  }
 }
 ?>

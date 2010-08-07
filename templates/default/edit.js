@@ -55,9 +55,18 @@ this.page=function(app,model)
             if(data['model_edit']._id)
             {
 
-             var where={'_id':app.ObjectID.createFromHexString(data['model1']['_id'])};
+             var where={'_id':app.ObjectID.createFromHexString(data['model_edit']['_id'])};
+             for(var x in page.model.fields)
+             {
+              if( page.model.fields.hasOwnProperty( x))
+              {
+               if(page.model.fields[x].edit.ftype==='select' && page.model.fields[x].edittag.lookup.usetable && page.model.fields[x].edittag.lookup.linkedfield=='_id' )
+                 data['model_edit'][x]=app.ObjectID.createFromHexString(data['model_edit'][x]); 
+              }
+             }
              delete data['model_edit']['_id'];
-
+             
+  
              page.model.update(where,data['model_edit'],function (where ,datawithkey)
              { 
               updateo=true; 
@@ -67,7 +76,7 @@ this.page=function(app,model)
              if(!updateok)
              {
               res.writeHead(200, { 'Content-Type': 'text/html'});        
-              data1={'page':page,'app':app, 'req':req, model_name:'model1', 'model1':page.model, 'content': sys.inspect(data) };
+              data1={'page':page,'app':app, 'req':req, 'content': sys.inspect(data) };
               res.write(      page.content.call(page,data1)        );
               res.end();
              }
@@ -93,7 +102,7 @@ this.page=function(app,model)
           var data1={'page':page, 'app':app, 'req':req, }         
           app.load_data(
            {
-            'edit': {  model:page.model                 , column_set:'view'  , where:{'_id':app.ObjectID.createFromHexString(req.parsedurl.query['_id'])}            , load_items:true,  load_subitems:true    },
+            'edit': {  model:page.model                 , column_set:'edit'  , where:{'_id':app.ObjectID.createFromHexString(req.parsedurl.query['_id'])}            , load_items:true,  load_subitems:true    },
            }
           ,
            data1

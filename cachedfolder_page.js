@@ -234,13 +234,13 @@ this.page=function(app,url,dirpath,reg_include,reg_exclude,debugit)
         {
       //   res.writeHead(404, { 'Content-Type': 'text/html', 'ETag':this.etag, 'Cache-control':  'max-age=172800', 'Expires':  expires.toUTCString(),  });
     //     res.write( "Not Found" );
-         sys.puts('cachefile page ' + url + ' relative ' + relative + ' file not found... "' + req.parsedurl.pathname + '"');
+         //sys.puts('cachefile page ' + url + ' relative ' + relative + ' file not found... "' + req.parsedurl.pathname + '"');
 //         res.end();
          return false;
         }
         else
         {
-         sys.puts('cachefile page ' + url + ' relative ' + relative + ' served... "' + req.parsedurl.pathname + '"');
+         //sys.puts('cachefile page ' + url + ' relative ' + relative + ' served... "' + req.parsedurl.pathname + '"');
          var file=this.files[relative];
          var expires = new Date;
          expires.setTime( expires.getTime() +  172800 ); // two days in seconds
@@ -264,7 +264,7 @@ this.page=function(app,url,dirpath,reg_include,reg_exclude,debugit)
     var relateive=filename.substring(dirlen,filename.length),reg_inc=(reg_include!=false),reg_exc=(reg_exclude!=false);
     if (reg_exc?reg_exclude.test(relateive):false) // if regex not defined ignore it
     {
-     if(debugit)sys.puts('cache folder: not loading '+relateive);
+     //if(debugit)sys.puts('cache folder: not loading '+relateive);
      return;
     }
     if (reg_inc?reg_include.test(relateive):true) // if regex not defined ignore it
@@ -275,7 +275,7 @@ this.page=function(app,url,dirpath,reg_include,reg_exclude,debugit)
       {
         if (err)
         {
-         sys.puts('error loading ' + relateive + ' ' + err); 
+         //sys.puts('error loading ' + relateive + ' ' + err); 
          err=null;
          return;
         }
@@ -284,7 +284,7 @@ this.page=function(app,url,dirpath,reg_include,reg_exclude,debugit)
          var ext=relateive.substring(relateive.lastIndexOf('.')+1,relateive.length);
          var contenttype=contentTypes[ext] || 'application/octet-stream';
          var charset=charsets[contenttype]?charsets[contenttype]:false;
-         if(debugit) sys.puts('cache folder: loading '+relateive);
+         //if(debugit) sys.puts('cache folder: loading '+relateive);
          page.files[relateive] = [
            contenttype+(charset?'; charset=' + charset:''), //0
            data.length, //1

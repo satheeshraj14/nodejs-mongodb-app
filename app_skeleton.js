@@ -65,6 +65,7 @@ function App()
     
     this.editfields= // master templates
     {
+     pagefilename:__filename,
      load_templates:  // texts treated as templates filenames to load and prepeare
      {
       checkbox:"editfields/checkbox.html",
@@ -93,6 +94,7 @@ function App()
     
     this.viewfields= // master templates
     {
+     pagefilename:__filename,
      load_templates:  // texts treated as templates filenames to load and prepeare
      {
       div:"viewfields/div.html",
@@ -126,6 +128,7 @@ function App()
    
     this.load_templates = function (templates_object)
     {
+
        templates_object.htmlencode=doubletemplate.htmlencode;
        
        templates_object.load=function(tempalte_name,template_file,data2)
@@ -216,6 +219,7 @@ function App()
     
     this.load_templates1 = function (templates_object)
     {
+          console.log(templates_object.pagefilename);
        templates_object.htmlencode=doubletemplate.htmlencode;
        
        templates_object.load=function(tempalte_name,template_file)
@@ -414,9 +418,11 @@ function App()
                 //sys.puts(sys.inspect(model_to_load,0));
                 process.nextTick(
                 function () {
+                
                  var loaded_subitems={},items={};
                  if(model_to_load.load_subitems && model_to_load.load_items)
                  { // multi load double
+                 
                    app.load_subitems( model_to_load.model , model_to_load.column_set , function (loaded_subitems)
                    {
                    model_to_load.model.list(model_to_load.where,function (cursor)
@@ -427,16 +433,17 @@ function App()
                      //sys.puts(sys.inspect(model_to_load,0));
 
                      retdata['error_name']                      = 'error_'       +items_to_load_key;
-                     retdata['error_'      +items_to_load_key]   = err;
+                     retdata['error_'      +items_to_load_key]  = err;
                      
                      retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
-                     retdata['cursor_'      +items_to_load_key]  = items;
+                     retdata['cursor_'      +items_to_load_key] = items;
                      
                      retdata['model_name']                      = 'model_'       +items_to_load_key;
-                     retdata['model_'       +items_to_load_key]  = model_to_load.model;
+                     retdata['model_'       +items_to_load_key] = model_to_load.model;
                      
                      retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
-                     retdata['sub_cursors_' +items_to_load_key]  = loaded_subitems;
+                     retdata['sub_cursors_' +items_to_load_key] = loaded_subitems;
+                     
                      //sys.puts(sys.inspect(   items ));
                      call_count--;  if(call_count==0)     callback();
                    });//toarray
@@ -451,17 +458,17 @@ function App()
                      //sys.puts(sys.inspect(model_to_load,0));
                      //sys.puts(sys.inspect(model_to_load))
                      retdata['error_name']                      = 'error_'       +items_to_load_key;
-                     retdata['error_'      +items_to_load_key]   = null;
+                     retdata['error_'      +items_to_load_key]  = null;
                      
                      retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
-                     retdata['cursor_'      +items_to_load_key]  = items;
+                     retdata['cursor_'      +items_to_load_key] = items;
                      
                      retdata['model_name']                      = 'model_'       +items_to_load_key;
-                     retdata['model_'       +items_to_load_key]  = model_to_load.model;
+                     retdata['model_'       +items_to_load_key] = model_to_load.model;
                      
                      retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
-                     retdata['sub_cursors_' +items_to_load_key]  = loaded_subitems;
-                     //sys.puts(sys.inspect(   items ));
+                     retdata['sub_cursors_' +items_to_load_key] = loaded_subitems;
+                     sys.puts(sys.inspect(   loaded_subitems ));
                      call_count--;  if(call_count==0)     callback();
                    });//subitems2
                  }
@@ -475,16 +482,16 @@ function App()
                      //sys.puts(sys.inspect(model_to_load,0));
                      //sys.puts(sys.inspect(model_to_load))
                      retdata['error_name']                      = 'error_'       +items_to_load_key;
-                     retdata['error_'      +items_to_load_key]   = err;
+                     retdata['error_'      +items_to_load_key]  = err;
                      
                      retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
-                     retdata['cursor_'      +items_to_load_key]  = items;
+                     retdata['cursor_'      +items_to_load_key] = items;
                      
                      retdata['model_name']                      = 'model_'       +items_to_load_key;
-                     retdata['model_'       +items_to_load_key]  = model_to_load.model;
+                     retdata['model_'       +items_to_load_key] = model_to_load.model;
                      
                      retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
-                     retdata['sub_cursors_' +items_to_load_key]  = loaded_subitems;
+                     retdata['sub_cursors_' +items_to_load_key] = loaded_subitems;
                      //sys.puts("inner retdata3---------------+++++++++++++++++++++++++++++++++");
                      //sys.puts(sys.inspect(retdata,0));
                      //sys.puts(sys.inspect(   items ));
@@ -824,13 +831,10 @@ function App()
        //sys.puts(JSON.stringify(doc) );
        if(callback) callback(doc);
       });
- 
      },
      
      dodel: function( where, callback )
      {
-      
-       
       this.collection.remove( where, function (err,doc){ 
        if(err) throw err;
        //sys.puts('sucsess');
@@ -841,7 +845,7 @@ function App()
      
      doupdate: function( where, data2 ,callback )
      {
-      sys.puts(sys.inspect([where,data2]));
+      //sys.puts(sys.inspect([where,data2]));
       this.collection.update(where,data2,function (err,doc){ 
        if(err) throw err;
        //sys.puts('sucsess');
@@ -925,7 +929,7 @@ function App()
        var page=this.pages[p];
        //add .model reference to page
        page.model=this;
-       if(this.modelname=='t1_organization')  console.log(" addpages page "+p);      
+       //if(this.modelname=='t1_organization')  console.log(" addpages page "+p);      
        app.load_templates(page);
 
       }
@@ -1109,7 +1113,7 @@ function App()
    admin           :require('templates/default/default').page.call(this,this), 
    website_default :require('templates/website/default').page.call(this,this), 
    favicon         :require('cachedfile_page'  ).page.call(this,this,'favicon.ico','favicon.ico'), 
-   jquery          :require('cachedfolder_page').page.call(this,this,'lib/jquery','deps/jquery',false,/^development-bundle/),
+   jquery          :require('cachedfolder_page').page.call(this,this,'lib/jquery','deps/jquery',false,/(^development-bundle)|jquery-validate\\lib|demo/),
    ckeditor        :require('cachedfolder_page').page.call(this,this,'lib/ckeditor','deps/ckeditor',/\.(js|html|gif|png|jpg|ico|css)$/,/(^\.)|(^_)|(\.\/)|(\.svn)/),
   };
   
@@ -1134,9 +1138,13 @@ function App()
     }
     else
      amatch['path']=pageurl;
-    //app.url_routes.push({path:pageurl,code:function(req,res,page,callback){res.writeHead(200, { 'Content-Type': 'text/plain'});res.write('hello world');res.end();}});
+    //app.url_routes.push({path:pageurl,code:function(req,res,page,request_i){res.writeHead(200, { 'Content-Type': 'text/plain'});res.write('hello world');res.end();}});
     app.url_routes.push(amatch);
    }
+   
+   //add some more other non page routes
+   app.url_routes.push({path:'/exit',code:function(req,res,page,request_i){res.writeHead(200, { 'Content-Type': 'text/plain'});res.write('exit');res.end();process.nextTick(function () {process.exit();});}});
+   
    if(callback)callback(callback);
   }
 }

@@ -1,6 +1,6 @@
 [submodule "deps/node-mongodb-native"]
 	path = deps/node-mongodb-native
-	url = git://github.com/christkv/node-mongodb-native.git
+	url = http://github.com/christkv/node-mongodb-native.git
 
 [submodule "deps/step"]
 	path = deps/step
@@ -17,3 +17,16 @@
 [submodule "deps/nodejs-meta-templates"]
 	path = deps/nodejs-meta-templates
 	url = http://github.com/shimondoodkin/nodejs-meta-templates.git
+
+[submodule "deps/node-formidable"]
+	path = deps/node-formidable
+	url = http://github.com/felixge/node-formidable.git
+
+[submodule "deps/node-microseconds"]
+	path = deps/node-microseconds
+	url = http://github.com/tmpvar/node-microseconds.git
+	
+[submodule "deps/jMediaelement"]
+	path = deps/jMediaelement
+	url = http://github.com/aFarkas/jMediaelement.git
+

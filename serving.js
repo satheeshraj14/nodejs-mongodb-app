@@ -1,10 +1,13 @@
-var sys = require('sys'); 
+var sys = require('sys');
+
 var url = require('url');   // allaws to parse urls                        
 var _ = require('deps/nodejs-clone-extend/merger');  //  lets do: _.extend(same,otherobjexts),  _.clone(obj) - creates new reference, see source to understand // 
 var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //load double teplate module
 //var doubletemplate=te.doubletemplate; // export double template function to global
 var fs = require('fs');    // allaws to open files
 var app=require('app_skeleton').app; // include  basic definision of a model and a filed in a model
+
+//var milliseconds = require('deps/node-microseconds/lib/node-microseconds').milliseconds;
 
 if(process.argv[3])
 {
@@ -14,7 +17,7 @@ else
 {
  var modules=[  require('module_pijimi'), ]; // include  basic definision of a model and a filed in a model
 }
-
+//require("sys").puts(milliseconds());
 //sys.puts('test');
 
     // install modules and setup models
@@ -27,9 +30,10 @@ else
 
 
 app = _.extend(app,{
+  //'milliseconds':milliseconds,
   init: function(db, callback)
   {
-
+  
     this.setupDb(db, function() {
 
      //  last install modules and setup models
@@ -43,7 +47,8 @@ app = _.extend(app,{
     } );   
     //    this.setupWebSocket();
     //this.addAllMetrics(db);
-  },
+  }
+  ,
   
   setupDb: function(db, callback) {
     
@@ -69,7 +74,7 @@ app = _.extend(app,{
       arrmodels.forEach(function (model)
       {
        var ret_group_item=newgroup();
-       sys.puts('create collection: app.models.'+model.modelname+'.collection = '+model.general.name);
+       //sys.puts('create collection: app.models.'+model.modelname+'.collection = '+model.general.name);
        db.collection
        (
         model.general.name
@@ -133,14 +138,27 @@ app = _.extend(app,{
    }
   },
   
-  serveRequest: function(req, res)
+  serveRequest: function(req, res, newi)
   {
-    var myurl=url.parse(req.url,true);
-    req.parsedurl=myurl;
-    var urlmatch=false;
-    var i;  
-    for(i=0;i<app.url_routes.length;i++)
+    if (!req.parsedurl)
     {
+     req.parsedurl=url.parse(req.url,true);
+     if(!req.parsedurl.query)req.parsedurl.query={};
+     req.parsedurl.pathname=decodeURIComponent(req.parsedurl.pathname.replace(/\+/g, '%20'));
+     //req.times=[];
+     //req.times_start=milliseconds();
+     //req.times.push(milliseconds()-req.times_start);
+    }
+    //sys.puts(' serveRequest '+newi);
+    if(!newi) newi=0;
+    
+    var myurl=req.parsedurl;
+    var urlmatch=false;
+
+    
+    for(var i=newi;i<app.url_routes.length;i++)
+    {
+     //sys.puts(' serveRequest loop '+i);
      urlmatch=false;
      if(app.url_routes[i].path=='default') continue; //add defaut  at the end
      if(typeof app.url_routes[i].pathbegins!='undefined')
@@ -148,7 +166,7 @@ app = _.extend(app,{
       if( myurl.pathname.substring(0,app.url_routes[i].pathbegins.length)==app.url_routes[i].pathbegins )
       {
        urlmatch=true;
-       sys.puts("match: "+app.url_routes[i].pathbegins);
+       //sys.puts("match: "+app.url_routes[i].pathbegins);
       }
      }
      else if(typeof app.url_routes[i].path!='undefined')
@@ -156,12 +174,11 @@ app = _.extend(app,{
       if(myurl.pathname==app.url_routes[i].path)
       {
        urlmatch=true;
-       sys.puts("match: "+app.url_routes[i].path);
+       //sys.puts("match: "+app.url_routes[i].path);
       }
      }
      if(urlmatch)
      {
-
       if(typeof app.url_routes[i].func!='undefined')
       {
        if(app.url_routes[i].func(data,settings,res,req,myurl))
@@ -170,8 +187,8 @@ app = _.extend(app,{
       }
       if(typeof app.url_routes[i].page!='undefined')
       {
-       if(app.url_routes[i].page.main(req,res,app.url_routes[i].page))
-       { 
+       if(app.url_routes[i].page.main( req, res, app.url_routes[i].page, i ))
+       {
         return true; // true means break the preview function
        }
        else urlmatch=false;
@@ -191,12 +208,12 @@ app = _.extend(app,{
     
     if(!urlmatch)
     {
-     sys.puts("notmatch: "+myurl.pathname);
+     //sys.puts("notmatch: "+myurl.pathname);
      //app.urls[0][1][app.urls[0][2]](req, res);
      res.writeHead(202, { 'Content-Type': 'text/html'});
      res.write("<html><head><title>Unhandeld request</title></head><body>hendle request (req, res) \r\n did not match any url: \r\n "+myurl.pathname+" \r\n<br\ > <a href='/'>click here</a> to go to the main page</body></html>");
      res.end();
-    }   
+    }
     //this.writePixel(res);
 
     //var env = this.splitQuery(req.url.split('?')[1]);
