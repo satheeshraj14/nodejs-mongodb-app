@@ -46,7 +46,7 @@ this.page=function(app,model)
            //res.writeHead(200, { 'Content-Type': 'text/html'});
            //data1={'page':page,'app':app,'content':'No ID' + sys.inspect(req.parsedurl) + sys.inspect(app.ObjectID.createFromHexString(req.parsedurl.query['_id'])) };
            //res.write( page.content.call(page,data1) );
-           ///res.end();
+           ///res.end(); 
            sys.puts('imposible false');
          }
          else
@@ -66,8 +66,10 @@ this.page=function(app,model)
              app.httputils.session_start(req,header);             
              res.writeHead(200, header);
              //res.write(sys.inspect(   data1 ));        
-             res.write( page.list.call(page,data1) );
-             res.end();
+             page.list.call(page,data1,function (echo){
+              res.write( echo );
+              res.end();
+             });
              //sys.puts(sys.inspect(   data1 ));
            }
           );

@@ -1098,6 +1098,7 @@ function App()
       add:require('templates/default/add').page.call(this,app,this), 
       edit:require('templates/default/edit').page.call(this,app,this), 
       del:require('templates/default/del').page.call(this,app,this), 
+      view:require('templates/default/view').page.call(this,app,this), 
      },
      
         

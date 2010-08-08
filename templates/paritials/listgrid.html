@@ -41,6 +41,8 @@ for(filedname in model.fields)
 &nbsp; 
 <a href="/<%=model.general.urlprefix+model.pages.edit.pageurl%>?_id=<?=row['_id'].toHexString()?>">edit</a>
 &nbsp; 
+<a href="/<%=model.general.urlprefix+model.pages.view.pageurl%>?_id=<?=row['_id'].toHexString()?>">view</a>
+&nbsp; 
 <a href="/<%=model.general.urlprefix+model.pages.del.pageurl%>?_id=<?=row['_id'].toHexString()?>">delete</a>
 &nbsp; 
 </td>

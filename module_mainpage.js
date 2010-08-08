@@ -1,4 +1,4 @@
-var _ = require('merger');  //  lets do: _.extend(same,otherobjexts),  _.clone(obj) - creates new reference, see source to understand // 
+var _ = require('deps/nodejs-clone-extend/merger');  //  lets do: _.extend(same,otherobjexts),  _.clone(obj) - creates new reference, see source to understand // 
 var sys = require('sys');
 
 function setupfirst(app)
@@ -15,8 +15,8 @@ function add_models(app)
  app.models.mainpage.general.urlprefix = 'mainpage';
  app.models.mainpage.general.title  = 'Main Page';
  app.models.mainpage.fields.title   = _.extend( _.clone(app.basicfields.normal),{general:{title:'Title'}} );
- app.models.mainpage.fields.text    = _.extend( _.clone(app.basicfields.normal),{general:{title:'Text on Main Page'},edit:{ftype:'dhtml'}} );
- app.models.mainpage.fields.footer  = _.extend( _.clone(app.basicfields.normal),{general:{title:'Footer of the website'},edit:{ftype:'dhtml'}} );
+ app.models.mainpage.fields.text    = _.extend( _.clone(app.basicfields.normal),{general:{title:'Text on Main Page'},edit:{ftype:'html'}} );
+ app.models.mainpage.fields.footer  = _.extend( _.clone(app.basicfields.normal),{general:{title:'Footer of the website'},edit:{ftype:'html'}} );
  app.models.mainpage.links.push ( {name:"othercollection",url:"othercollection.html",func:function (data){ return this.url+'?id='+data.id }} );
   
 } this.add_models=add_models;
