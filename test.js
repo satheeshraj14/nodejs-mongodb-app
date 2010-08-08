@@ -1,42 +1,41 @@
-var sys=require("sys");
-function continuable(vars,callback,continuefrom)
-{
- var x={};
- with(x)
- {
-  var echo="cococo"; 
-  console.log(sys.inspect(x.context));
- }
- 
- if(!continuefrom)
-  continuefrom=null;
- switch(continuefrom)
- {
-  case null:
-  
- 
-  case "point1":
-   console.log("check point 1");
-  
-  
-  case "point2":
-   console.log("check point 2");
+var sys = require("sys");
+var mongo = require('../lib/mongodb');
 
-  case "point3":
-   console.log("check point 3");
- }
- if(callback)
-  callback(echo);
- else
-  return echo;
-}
+var host = process.env['MONGO_NODE_DRIVER_HOST'] != null ? process.env['MONGO_NODE_DRIVER_HOST'] : 'localhost';
+var port = process.env['MONGO_NODE_DRIVER_PORT'] != null ? process.env['MONGO_NODE_DRIVER_PORT'] : mongo.Connection.DEFAULT_PORT;
 
-function detour(val,callback)
-{
- console.log("detour");
- if(callback)
-  callback(callback);
-}
+sys.puts("Connecting to " + host + ":" + port);
+var db = new mongo.Db('node-mongo-examples', new mongo.Server(host, port, {}), {});
+db.open(function(err, db) {
+  db.dropDatabase(function(err, result) {
+    db.collection('test', function(err, collection) {
+      // Erase all records from the collection, if any
+      collection.remove(function(err, collection) {
+        // Insert 3 records
+        for(var i = 0; i < 3; i++) {
+          collection.insert({'a':i});
+        }
+        
+        collection.count(function(err, count) {
+          sys.puts("There are " + count + " records in the test collection. Here they are:");
 
-continuable({},function(echo) { console.log("echo was:"+echo);} );
-
+          collection.find(function(err, cursor) {
+            cursor.each(function(err, item) {
+              if(item != null) {
+                sys.puts(sys.inspect(item));
+                sys.puts("created at " + new Date(item._id.generationTime) + "\n")
+              }
+              // Null signifies end of iterator
+              if(item == null) {
+                // Destory the collection
+                collection.drop(function(err, collection) {
+                  db.close();
+                });
+              }
+            });
+          });
+        });
+      });
+    });
+  });
+});

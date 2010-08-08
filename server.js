@@ -10,8 +10,7 @@ var mongo = require('deps/node-mongodb-native/lib/mongodb');
 var app = require('serving').app;
 
 db = new mongo.Db(app.database.name, new mongo.Server(app.database.host, app.database.port, {}), {});
-//sys.puts("Database name : "+app.database.name);
-db.addListener("error", function(error) { sys.puts("Error connecting to mongo -- perhaps it isn't running?"); });
+db.addListener("error", function(error) { sys.puts("Error connecting to mongo -- perhaps it isn't running?"); process.exit(-1); });
 
 db.open(function(p_db)
 {
