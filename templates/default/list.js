@@ -2,6 +2,8 @@ this.page=function(app,model)
 {
  var page=
      {
+      //pagethis:this,
+      //pagearguments:arguments,
       pagefilename:__filename,
        //'model':model,
       pageurl:'/list.jsp',

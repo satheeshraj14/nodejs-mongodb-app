@@ -104,6 +104,7 @@ function upload_files(req, res, request_vars,folder,callback)
 
 this.post=function (req, res, callback)
 {
+ console.log("POST5");
  if(
   req.method==='POST'
   // || req.method=='PUT' 
@@ -118,33 +119,42 @@ this.post=function (req, res, callback)
     decoder=this.postdecoders[content_type];
   }
   var data = '';
- 
+  console.log("content-type:"+req.headers['content-type']);
   if(req.headers['content-type']!='multipart/form-data') 
   {
-    req.setEncoding('utf8');
-    req.addListener('data', function(chunk) { data += chunk; });
-    req.addListener('end', function()
+    try
     {
-     //req.postmime = content_type;
-     //req.postraw = data;
-     if(decoder)
-     {
-      try
+     console.log("POST6");
+     req.setEncoding('utf8');
+     //console.log(sys.inspect(req));
+     req.on('data', function(chunk) {  console.log("POST7"); data += chunk; });
+     req.on('end', function()
+     { 
+      console.log("POST8");
+      //req.postmime = content_type;
+      //req.postraw = data;
+      if(decoder)
       {
-       req.post = decoder(data);
-       callback(req.post);
+       try
+       {
+        req.post = decoder(data);
+        callback(req.post);
+       }
+       catch (err)
+       {
+        callback();
+       }
       }
-      catch (err)
+      else
       {
-       callback();
+       console.log("POST9");
+       callback({});
       }
-     }
-     else
-     {
-      callback({});
-     } 
-    });
-  }   
+     });
+    }catch(e){console.log(e.stack);}
+    req.resume();
+    console.log("POST10");
+  }  
   else
   {
     upload_files(req, res,'/tmp/',function(error,data)
@@ -152,30 +162,30 @@ this.post=function (req, res, callback)
       if(error!==null) callback({});
       else             callback(data);
      });
-  }
- }
+  }  
+ }   
  else
  {
   callback({});
  }
 }
-
+ 
 this.referrer = function(req, res, callback) 
 { // actualy no need call back here because it is not transfering any thing
  if(callback)
   callback(req, res,req.headers.referrer || req.headers.referer || "");
  else
   return req.headers.referrer || req.headers.referer || "";
-}
-
+} 
+ 
 this.redirect = function(req, res, url, callback, code )
 {
  res.writeHead( code || 302, {'Location': url } );
  res.end();
  if(callback)callback();
 };
-
-
+ 
+ 
 function parseCookie(str)
 {
     var obj = {},
@@ -196,7 +206,7 @@ function parseCookie(str)
     }
     return obj;
 } this.parseCookie=parseCookie; 
-
+ 
 function cookie(req)
 {
  if(req.headers.cookie)
@@ -220,10 +230,10 @@ function session_start(req,header)
   sid=(((new Date()).getTime()*10000)+(Math.floor(Math.random() * 9999)))
   req.session_id=sid;
   header['Set-Cookie']='sid="'+sid+'"; path=/'+(req.secure?'; secure:':'');
- }       
+ }
  return parsedcookie;     
 } this.session_start=session_start; 
-
+ 
 function session_save(req)
 {
  if(req.session_id);

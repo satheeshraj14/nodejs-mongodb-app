@@ -4,6 +4,8 @@ this.page=function(app,model)
 {
  var page=
      {
+       //pagethis:this,
+       //pagearguments:arguments,
        pagefilename:__filename,
        pageurl:'/add.jsp',
        // add error on existing function       

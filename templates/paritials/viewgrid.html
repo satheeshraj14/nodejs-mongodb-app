@@ -5,14 +5,14 @@ var value;
 ?>
 <table border=1>
 <%
-var filedname;
-for(filedname in model.fields)
+var fieldname;
+for(fieldname in model.fields)
 {
- filed=model.fields[filedname];
+ field=model.fields[fieldname];
  %>
  <tr>
- <td><%=filed.general.title%></td>
- <td><?=row[<%=JSON.stringify(filedname) %>]<% if(filedname=='_id') echo+='.toHexString()'%> || '' ?></td> 
+ <td><%=field.general.title%></td>
+ <td><?=row[<%=JSON.stringify(fieldname) %>]<% if(fieldname=='_id') echo+='.toHexString()'%> || '' ?></td> 
  </tr>
  <% 
 }

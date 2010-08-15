@@ -4,6 +4,10 @@ var sys = require('sys');
 var httputils = require('httputils');
 var ObjectID= require('deps/node-mongodb-native/lib/mongodb/bson/bson').ObjectID;
 var step=require('deps/step/lib/step');
+
+var autoreload= require('deps/node-hot-reload');
+autoreload.path=__dirname;
+
 /*
 
  +tables - collections
@@ -28,6 +32,8 @@ var step=require('deps/step/lib/step');
 
 function App()
 {
+    this.autoreload=autoreload;
+	this._=_;
     var app=this;
     this.server={port:8000};
     this.websocket={port:8000};
@@ -126,7 +132,7 @@ function App()
     
    
    
-    this.load_templates = function (templates_object)
+    this.load_templates = function (templates_object,callback)
     {
 
        templates_object.htmlencode=doubletemplate.htmlencode;
@@ -166,11 +172,13 @@ function App()
        
        var data,tempalte_name,template_file;
        // load templates
-       
+       var countcallback=0;// count inner loops until callback
+       countcallback++;//one more for this function;
        if(templates_object.load_templates)
        _.foreach(templates_object.load_templates,
        function (template_file,tempalte_name)
        {
+         countcallback++;
          templates_object.prepere_data(templates_object,tempalte_name, function(data)
          {
           if(templates_object[tempalte_name])
@@ -192,6 +200,8 @@ function App()
            //console.log('load template3 '+(templates_object.pagefilename?templates_object.pagefilename:'')+' - '+tempalte_name+' model:'+(templates_object.model?templates_object.model.modelname:''));
            templates_object[tempalte_name]=doubletemplate.loadtemplate(app.templates_path+template_file,templates_object,data)
           }
+          countcallback--;
+          if(countcallback==0) {if(callback)callback(); }
          }
         );
        },this);
@@ -201,7 +211,8 @@ function App()
        if(templates_object.prepeare_templates)
        _.foreach(templates_object.prepeare_templates,
        function (template_file,tempalte_name)
-       { 
+       {
+        countcallback++;
         templates_object.prepere_data(templates_object,tempalte_name,function (data)
         {
          if(templates_object[tempalte_name])
@@ -211,15 +222,18 @@ function App()
           //console.log('load template4 '+(templates_object.pagefilename?templates_object.pagefilename:'')+' - '+tempalte_name+'.');
           templates_object[tempalte_name]=doubletemplate.prepeare(template_file,'function/'+tempalte_name,templates_object,data);
          }
+         countcallback--;
+         if(countcallback==0) if(callback)callback();
         });
        }
        ,this);
-       
+       countcallback--;
+       if(countcallback==0) {if(callback)callback(); }
     }
     
     this.load_templates1 = function (templates_object)
     {
-          console.log(templates_object.pagefilename);
+       //   console.log(templates_object.pagefilename);
        templates_object.htmlencode=doubletemplate.htmlencode;
        
        templates_object.load=function(tempalte_name,template_file)
@@ -287,7 +301,7 @@ function App()
       else if(operation=='advancedsearch') operations_type='edit'; // add searchtags later
       for(fieldname in main_model.fields)
       {
-       
+       if(!main_model.fields[fieldname]) console.log('field \''+main_model.general.name +','+fieldname+'\' not found')
        field=main_model.fields[fieldname];
 
        if(operations_type=='view')
@@ -603,7 +617,7 @@ function App()
         file:      { size: 30, attributes: '', resizeimage: false, resizeheight: 0, resizewidth: 0, resizetype: 'jpg', /* jpg / png*/ }, 
         hidden:    { customvalue: '', attributes: '', },
         validation:{ validate: false, type:'' /* date/phone... */, regex:'', required:false,  errormessage: '', /* addition to error mesage */ userfunc:app.defaultvalidation, },
-        lookup:    { sameasedit:false, values: {}, /* key-value object array */ usetable: false, tablename: '', linkedfield: '', displayfield: '', displayfield2: '', orderby: '', ascdesc: '', /* '' / asc / desc */ filter: '', distinct: false, filterfiled: '', parentfiled: '', },
+        lookup:    { sameasedit:false, values: {}, /* key-value object array */ usetable: false, tablename: '', linkedfield: '', displayfield: '', displayfield2: '', orderby: '', ascdesc: '', /* '' / asc / desc */ filter: '', distinct: false, filterfield: '', parentfield: '', },
         tempalte:false /* null or custom template function or file name etc */,
        },
        edittag:        {
@@ -618,10 +632,10 @@ function App()
         file:      { size: 30, attributes: '', resizeimage: false, resizeheight: 0, resizewidth: 0, resizetype: 'jpg', /* jpg / png*/ }, 
         hidden:    { customvalue: '', attributes: '', },
         validation:{ validate: false, type:'' /* date/phone... */, regex:'', required:false,  errormessage: '', /* addition to error mesage */ userfunc:app.defaultvalidation, },
-        lookup:    {                   values: {}, /* key-value object array */ usetable: false, tablename: '', linkedfield: '', displayfield: '', displayfield2: '', orderby: '', ascdesc: '', /* '' / asc / desc */ filter: '', distinct: false, filterfiled: '', parentfiled: '', },
+        lookup:    {                   values: {}, /* key-value object array */ usetable: false, tablename: '', linkedfield: '', displayfield: '', displayfield2: '', orderby: '', ascdesc: '', /* '' / asc / desc */ filter: '', distinct: false, filterfield: '', parentfield: '', },
         tempalte:false /* null or custom template function or file name etc */,
        },
-      }  /* end filed */; 
+      }  /* end field */; 
      
 
     this.basicfields=
@@ -635,6 +649,7 @@ function App()
     this.basicfields.number   = _.cloneextend(app.basicfields.normal, { edittag: { validation: { validate: false, type: 'number'} }, general: { ftype: 'number'} });
     this.basicfields.lookup   = _.cloneextend(app.basicfields.normal, { edit: { ftype: 'select' }, edittag: { select: { lookup: true }, lookup: { usetable: true}} });
     this.basicfields.keyvalue = _.cloneextend(app.basicfields.normal, { edit: { ftype: 'select' }, edittag: { select: { lookup: true }, lookup: { usetable: false}} });
+    this.basicfields.file   = _.cloneextend(app.basicfields.normal, { edittag: { }, general: { ftype: 'text'} });
 
     
     this.basicmodel=
@@ -642,6 +657,7 @@ function App()
      modelname:"set in serving.js",
      collection:null, //handle to main mongodb collection
      links:[], //handle to main mongodb collection
+     empty_object:{},
      general:
      {
       urlprefix:'model',
@@ -952,6 +968,10 @@ function App()
      doinit: function( data )
      {
       app.prepare_subitems_lists(this);
+      var self = this;
+      _.foreach(this.fields , function(field , field_key){
+    	  self.empty_object[field_key] = '';
+      });
       this.addpages();
       this.addurls();
       
@@ -1122,24 +1142,30 @@ function App()
    var p,tempalte_name,template_function;
    for(p in this.pages)
    {
-    var page=this.pages[p];
-    //add .model reference to page
-    app.load_templates(page);
+    if(this.pages.hasOwnProperty(p) )
+    {
+     var page=this.pages[p];
+     //add .model reference to page
+     app.load_templates(page);
+    }
    }
    // adlater calling route before, route after
    for(p in this.pages)
    {
-    var pageurl='/'+this.pages[p].pageurl;
-    var amatch={page:this.pages[p]}
-    if(this.pages[p].urlmatch)
+    if(this.pages.hasOwnProperty(p) )
     {
-     //sys.puts(this.pages[p].urlmatch+"="+pageurl);
-     amatch[this.pages[p].urlmatch]=pageurl;
+     var pageurl='/'+this.pages[p].pageurl;
+     var amatch={page:this.pages[p]}
+     if(this.pages[p].urlmatch)
+     {
+      //sys.puts(this.pages[p].urlmatch+"="+pageurl);
+      amatch[this.pages[p].urlmatch]=pageurl;
+     }
+     else
+      amatch['path']=pageurl;
+     //app.url_routes.push({path:pageurl,code:function(req,res,page,request_i){res.writeHead(200, { 'Content-Type': 'text/plain'});res.write('hello world');res.end();}});
+     app.url_routes.push(amatch);
     }
-    else
-     amatch['path']=pageurl;
-    //app.url_routes.push({path:pageurl,code:function(req,res,page,request_i){res.writeHead(200, { 'Content-Type': 'text/plain'});res.write('hello world');res.end();}});
-    app.url_routes.push(amatch);
    }
    
    //add some more other non page routes
@@ -1147,6 +1173,41 @@ function App()
    
    if(callback)callback(callback);
   }
+   
+  this.watchpage = function (pagename,filename)
+  {
+   var watch_arr=[];
+   for(k in app.pages[pagename].load_templates)
+   {
+    if(app.pages[pagename].load_templates.hasOwnProperty (k))
+    {
+     watch_arr.push('templates/'+app.pages[pagename].load_templates[k]);
+    }
+   }
+   watch_arr.push(filename);
+
+   autoreload.watchrel(watch_arr,filename, function (newmodule)
+   {
+    var oldpage=app.pages[pagename];
+    var page=newmodule.page.apply(oldpage.pagethis?oldpage.pagethis:app,oldpage.pagearguments?oldpage.pagearguments:[app]);
+    app.load_templates(page,function ()
+    {
+     app.pages[pagename]=page;
+     for(var i=0;i<app.url_routes.length;i++)
+     {
+      if(app.url_routes[i].page)
+      if(app.url_routes[i].page.pagefilename==oldpage.pagefilename)
+      {
+       app.url_routes[i].page=page;
+       app.url_routes[i].page=page;
+       console.log( (new Date).toTimeString() + ' page ' + i + ' reloaded ' + filename );
+      }
+     }
+    }); 
+    // route update here
+   }); 
+  }
+  
 }
 
 var app = new App();
