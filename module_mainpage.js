@@ -15,9 +15,11 @@ function add_models(app)
  app.models.mainpage.general.urlprefix = 'mainpage';
  app.models.mainpage.general.title  = 'Main Page';
  app.models.mainpage.fields.title   = _.extend( _.clone(app.basicfields.normal),{general:{title:'Title'}} );
- app.models.mainpage.fields.text    = _.extend( _.clone(app.basicfields.normal),{general:{title:'Text on Main Page'},edit:{ftype:'html'}} );
- app.models.mainpage.fields.footer  = _.extend( _.clone(app.basicfields.normal),{general:{title:'Footer of the website'},edit:{ftype:'html'}} );
+ app.models.mainpage.fields.text    = _.extend( _.clone(app.basicfields.html),{general:{title:'Text on Main Page'}} );
+ app.models.mainpage.fields.footer  = _.extend( _.clone(app.basicfields.html),{general:{title:'Footer of the website'}} );
+ app.models.mainpage.fields.select = _.cloneextend(app.basicfields.lookup, { general: { title: 'some list' }, edittag: { lookup: { tablename: 'mainpage', linkedfield: '_id', displayfield: 'title' }}});
  app.models.mainpage.links.push ( {name:"othercollection",url:"othercollection.html",func:function (data){ return this.url+'?id='+data.id }} );
+
   
 } this.add_models=add_models;
 
