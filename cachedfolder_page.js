@@ -204,7 +204,7 @@ var charsets = {
   'text/css': 'UTF-8'
 };
 
-this.page=function(app,url,dirpath,reg_include,reg_exclude,debugit)
+this.page=function(app,url,dirpath,reg_include,reg_exclude,hotreload,debugit)
 {
  if(typeof debugit==='undefined')debugit=false;
  var page=
@@ -294,6 +294,39 @@ this.page=function(app,url,dirpath,reg_include,reg_exclude,debugit)
          //page.files[relateive].push(page.files[relateive].length);
         }
       });
+      if(hotreload)
+      {
+       console.log((new Date).toString()+' watch cached file: '+filename);
+       fs.watchFile(filename, function ()
+       {
+        console.log((new Date).toString()+' reload cached file: '+filename);
+        page.etag=(new Date).getTime() ,  //my etag is the last time i loaded the application - last cache
+        // it is change  etag and the function that above 
+        fs.readFile(filename, function (err, data)
+        {
+          if (err)
+          {
+           //sys.puts('error loading ' + relateive + ' ' + err); 
+           err=null;
+           return;
+          }
+          else
+          {
+           var ext=relateive.substring(relateive.lastIndexOf('.')+1,relateive.length);
+           var contenttype=contentTypes[ext] || 'application/octet-stream';
+           var charset=charsets[contenttype]?charsets[contenttype]:false;
+           //if(debugit) sys.puts('cache folder: loading '+relateive);
+           page.files[relateive] = [
+             contenttype+(charset?'; charset=' + charset:''), //0
+             data.length, //1
+             data//,      //2
+             //ext,       //
+            ];
+           //page.files[relateive].push(page.files[relateive].length);
+          }
+        });
+       });
+      }
      });
     }
    }

@@ -1,3 +1,4 @@
+console.log("starting server");
 // process.argv[2] = port (optional)
 // process.argv[3] = other main module (optional), modules should be specified staticaly static or by file list  but anyways i have my proprietery website and and the example i want them both running so ican share good examples
 
@@ -14,6 +15,7 @@ db.addListener("error", function(error) { sys.puts("Error connecting to mongo --
 
 db.open(function(p_db)
 {
+  console.log("connected to database");
   //var app = new App();
   app.init(db, 
   function()
@@ -26,7 +28,8 @@ db.open(function(p_db)
 
 // exit if any js file or template file is changed.
 // this script encapsualated in a batch while(true); so it runs again after exit.
-var autoexit_watch=require('deps/nodejs-autorestart/autoexit').watch;
-autoexit_watch(__dirname,".js");
-autoexit_watch(__dirname+"/templates",".html");
-autoexit_watch(__dirname+"/templates",".css");
+//var autoexit_watch=require('deps/nodejs-autorestart/autoexit').watch;
+//autoexit_watch(__dirname,".js");
+//autoexit_watch(__dirname+"/templates",".html");
+//autoexit_watch(__dirname+"/templates",".css");
+//loadlater(__dirname + "/invite.js");

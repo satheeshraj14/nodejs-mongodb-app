@@ -8,7 +8,7 @@ var fs = require('fs');    // allaws to open files
 var app=require('app_skeleton').app; // include  basic definision of a model and a filed in a model
 
 //var milliseconds = require('deps/node-microseconds/lib/node-microseconds').milliseconds;
-
+console.log("start require modules");
 if(process.argv[3])
 {
  var modules=[  require(process.argv[3]) ];  // same as below but dynamicaly for testing only
@@ -17,18 +17,25 @@ else
 {
  var modules=[  require('module_mainpage'), ]; // include  basic definision of a model and a filed in a model
 }
+console.log("end require modules");
+
 //require("sys").puts(milliseconds());
 //sys.puts('test');
 
+console.log("starting to install modules and to setup models");
     // install modules and setup models
     for(var i =0; i < modules.length ; i++ ) modules[i].setupfirst(app);
+console.log("start app.load_app_templates");
     app.load_app_templates(); 
+console.log("start modules[i].setup");
     for(var i =0; i < modules.length ; i++ ) modules[i].setup(app)   ;
+console.log("start app.models[i].setupfirst");
      for(var i in app.models) app.models[i].setupfirst(app);
+console.log("start app.models[i].setup");
      for(var i in app.models) app.models[i].setup(app);
     // end install modules and setup models
 
-
+console.log("starting extend application");
 app = _.extend(app,{
   //'milliseconds':milliseconds,
   init: function(db, callback)
@@ -208,7 +215,7 @@ app = _.extend(app,{
     
     if(!urlmatch)
     {
-     //sys.puts("notmatch: "+myurl.pathname);
+     sys.puts("not found: "+myurl.pathname);
      //app.urls[0][1][app.urls[0][2]](req, res);
      res.writeHead(202, { 'Content-Type': 'text/html'});
      res.write("<html><head><title>Unhandeld request</title></head><body>hendle request (req, res) \r\n did not match any url: \r\n "+myurl.pathname+" \r\n<br\ > <a href='/'>click here</a> to go to the main page</body></html>");

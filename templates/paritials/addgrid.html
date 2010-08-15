@@ -3,15 +3,15 @@
 <table border=1>
 <?var value='',filed={};?>
 <%
-var filedname;
-for(filedname in model.fields)
+var fieldname;
+for(fieldname in model.fields)
 {
- filed=model.fields[filedname];
+ field=model.fields[fieldname];
  %>
- <?filed=<%=model_name%>.fields[<%=JSON.stringify(filedname)%>];?>
+ <?field=<%=model_name%>.fields[<%=JSON.stringify(fieldname)%>];?>
  <tr>
- <td><%=filed.general.title%></td>
- <td><%=app.editfields[ filed.edit.ftype ](this._.replace(vars,{'filedname':filedname,'filed':filed}));%> 
+ <td><%=field.general.title%></td>
+ <td><%=app.editfields[ field.edit.ftype ](this._.replace(vars,{'fieldname':fieldname,'field':field}));%> 
  </tr>
  <% 
 }

@@ -2,6 +2,8 @@ this.page=function(app)
 {
  var page=
      {
+      //pagethis:this,
+      //pagearguments:arguments,
       pagefilename:__filename,
       pageurl:'admin',
        // add error on existing function       
