@@ -1,9 +1,10 @@
 var _ = require('deps/nodejs-clone-extend/merger');  //  lets do: _.extend(same,otherobjexts),  _.clone(obj) - creates new reference, see source to understand // 
 var sys = require('sys');
- var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //load double teplate module
+var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //load double teplate module
 var httputils = require('httputils');
 var ObjectID= require('deps/node-mongodb-native/lib/mongodb/bson/bson').ObjectID;
 var step=require('deps/step/lib/step');
+var phpjs = require('phpjs'); // http://phpjs.org/packages/view/2693/name:806d77a73ce93d851a4620f4a788acd7
 
 var autoreload= require('deps/node-hot-reload');
 autoreload.path=__dirname;
@@ -34,6 +35,7 @@ function App()
 {
     this.autoreload=autoreload;
 	this._=_;
+	this.phpjs=phpjs;
     var app=this;
     this.server={port:8000};
     this.websocket={port:8000};
@@ -378,33 +380,39 @@ function App()
               {
                if(items_to_load.hasOwnProperty(items_to_load_key2))
                {
-                var model_to_load2=items_to_load[items_to_load_key2];
+                var info_of_model_to_load2=items_to_load[items_to_load_key2];
                 call_count++;
-                (function(model_to_load,items_to_load_key) {
-                process.nextTick(
-                function () {
-                 var loaded_subitems={},items={};
-
-                     //sys.puts(sys.inspect(model_to_load))
-                     retdata['error_name']                      = 'error_'       +items_to_load_key;
-                     retdata['error_'      +items_to_load_key]   = null;
-                     
-                     retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
-                     retdata['cursor_'      +items_to_load_key]  = items;
-                     
-                     retdata['model_name']                      = 'model_'       +items_to_load_key;
-                     retdata['model_'       +items_to_load_key]  = model_to_load.model;
-                     
-                     retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
-                     retdata['sub_cursors_' +items_to_load_key]  = loaded_subitems;
-                     //sys.puts(sys.inspect(   items ));
-                     call_count--;  if(call_count==0)     callback();
-                  
-                 
-                 //fs.readFile(__filename, group_slot);
-
+                (function(info_of_model_to_load,items_to_load_key) {
+                process.nextTick(function ()
+                {
+                      var loaded_subitems={},items={};
+                      //
+                      retdata['item_name']                     = items_to_load_key;
+                      retdata[items_to_load_key]              = _.clone(info_of_model_to_load.empty_object);
+                      //
+                      //sys.puts(sys.inspect(info_of_model_to_load))
+                      retdata['error_name']                      = 'error_'       +items_to_load_key;
+                      retdata['error_'      +items_to_load_key]   = null;
+                      //
+                      retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
+                      retdata['cursor_'      +items_to_load_key]  = items;
+                      //
+                      if(info_of_model_to_load.load_one)
+                      {
+                       retdata['item_name']                      = items_to_load_key;
+                       retdata[items_to_load_key]                = _.clone(info_of_model_to_load.model.empty_object);
+                      }
+                      //
+                      retdata['model_name']                      = 'model_'       +items_to_load_key;
+                      retdata['model_'       +items_to_load_key]  = info_of_model_to_load.model;
+                      //
+                      retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
+                      retdata['sub_cursors_' +items_to_load_key]  = loaded_subitems;
+                      //sys.puts(sys.inspect(   items ));
+                      call_count--;  if(call_count==0)     callback();
+                      //fs.readFile(__filename, group_slot);
                 }); // next tick
-                })(model_to_load2,items_to_load_key2);// subfunction
+                })(info_of_model_to_load2,items_to_load_key2);// subfunction
                }; // if has own
               } //for in
              } // else of empty
@@ -425,98 +433,141 @@ function App()
               {
                if(items_to_load.hasOwnProperty(items_to_load_key2))
                {
-                var model_to_load2=items_to_load[items_to_load_key2];
+                var info_of_model_to_load2=items_to_load[items_to_load_key2];
                 call_count++;
-                (function(model_to_load,items_to_load_key) {
+                (function(info_of_model_to_load,items_to_load_key) {
                 //sys.puts("top model---------------************************************");
-                //sys.puts(sys.inspect(model_to_load,0));
-                process.nextTick(
-                function () {
-                
+                //sys.puts(sys.inspect(info_of_model_to_load,0));
+                process.nextTick(function ()
+                {
                  var loaded_subitems={},items={};
-                 if(model_to_load.load_subitems && model_to_load.load_items)
+                 if(info_of_model_to_load.load_subitems && info_of_model_to_load.load_items)
                  { // multi load double
-                 
-                   app.load_subitems( model_to_load.model , model_to_load.column_set , function (loaded_subitems)
-                   {
-                   model_to_load.model.list(model_to_load.where,function (cursor)
-                   {
-                   cursor.toArray(function(err, items)
-                   {
-                     //sys.puts("inner model1---------------+++++++++++++++++++++++++++++++++");
-                     //sys.puts(sys.inspect(model_to_load,0));
-
-                     retdata['error_name']                      = 'error_'       +items_to_load_key;
-                     retdata['error_'      +items_to_load_key]  = err;
-                     
-                     retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
-                     retdata['cursor_'      +items_to_load_key] = items;
-                     
-                     retdata['model_name']                      = 'model_'       +items_to_load_key;
-                     retdata['model_'       +items_to_load_key] = model_to_load.model;
-                     
-                     retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
-                     retdata['sub_cursors_' +items_to_load_key] = loaded_subitems;
-                     
-                     //sys.puts(sys.inspect(   items ));
-                     call_count--;  if(call_count==0)     callback();
-                   });//toarray
-                   });//list
-                   });//subitems2
+                  app.load_subitems( info_of_model_to_load.model , info_of_model_to_load.column_set , function (loaded_subitems)
+                  {
+                  info_of_model_to_load.model.select(info_of_model_to_load.where,function (cursor)
+                  {
+                  cursor.toArray(function(err, items)
+                  {
+                         //sys.puts("inner model1---------------+++++++++++++++++++++++++++++++++");
+                         //sys.puts(sys.inspect(info_of_model_to_load,0));
+                         //
+                         retdata['error_name']                      = 'error_'       +items_to_load_key;
+                         retdata['error_'      +items_to_load_key]  = err;
+                         //
+                         if(info_of_model_to_load.fill_empty)
+                         {
+                          for(var i=0;i<items.length;i++)
+                          {
+                           _.add(items[i],info_of_model_to_load.empty_object);
+                          }
+                         }
+                         //
+                         retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
+                         retdata['cursor_'      +items_to_load_key] = items;
+                         //
+                         if(info_of_model_to_load.load_one)
+                         {
+                          retdata['item_name']                      = items_to_load_key;
+                          retdata[items_to_load_key]                = items.length>0?items[0]:_.clone(info_of_model_to_load.model.empty_object);
+                         }
+                         //
+                         retdata['model_name']                      = 'model_'       +items_to_load_key;
+                         retdata['model_'       +items_to_load_key] = info_of_model_to_load.model;
+                         //
+                         retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
+                         retdata['sub_cursors_' +items_to_load_key] = loaded_subitems;
+                         //
+                         //sys.puts(sys.inspect(   items ));
+                         call_count--;  if(call_count==0)     callback();
+                         //
+                  });//toarray
+                  });//select
+                  });//subitems2
                  }
-                 else if(model_to_load.load_subitems)
+                 else if(info_of_model_to_load.load_subitems)
                  { // multi load
-                   app.load_subitems( model_to_load.model , model_to_load.column_set , function (loaded_subitems)
+                   app.load_subitems( info_of_model_to_load.model , info_of_model_to_load.column_set , function (loaded_subitems)
                    {
-                     //sys.puts("inner model2---------------+++++++++++++++++++++++++++++++++");
-                     //sys.puts(sys.inspect(model_to_load,0));
-                     //sys.puts(sys.inspect(model_to_load))
-                     retdata['error_name']                      = 'error_'       +items_to_load_key;
-                     retdata['error_'      +items_to_load_key]  = null;
-                     
-                     retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
-                     retdata['cursor_'      +items_to_load_key] = items;
-                     
-                     retdata['model_name']                      = 'model_'       +items_to_load_key;
-                     retdata['model_'       +items_to_load_key] = model_to_load.model;
-                     
-                     retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
-                     retdata['sub_cursors_' +items_to_load_key] = loaded_subitems;
-                     sys.puts(sys.inspect(   loaded_subitems ));
-                     call_count--;  if(call_count==0)     callback();
+                         //sys.puts("inner model2---------------+++++++++++++++++++++++++++++++++");
+                         //sys.puts(sys.inspect(info_of_model_to_load,0));
+                         //sys.puts(sys.inspect(info_of_model_to_load))
+                         retdata['error_name']                      = 'error_'       +items_to_load_key;
+                         retdata['error_'      +items_to_load_key]  = null;
+                         //
+                         if(info_of_model_to_load.fill_empty)
+                         {
+                          for(var i=0;i<items.length;i++)
+                          {
+                           _.add(items[i],info_of_model_to_load.empty_object);
+                          }
+                         }
+                         //
+                         retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
+                         retdata['cursor_'      +items_to_load_key] = items;
+                         //
+                         if(info_of_model_to_load.load_one)
+                         {
+                          retdata['item_name']                      = items_to_load_key;
+                          retdata[items_to_load_key]                = items.length>0?items[0]:_.clone(info_of_model_to_load.model.empty_object);
+                         }
+                         //
+                         retdata['model_name']                      = 'model_'       +items_to_load_key;
+                         retdata['model_'       +items_to_load_key] = info_of_model_to_load.model;
+                         //
+                         retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
+                         retdata['sub_cursors_' +items_to_load_key] = loaded_subitems;
+                         sys.puts(sys.inspect(   loaded_subitems ));
+                         call_count--;  if(call_count==0)     callback();
+                         //
                    });//subitems2
                  }
-                 else // load list
+                 else // load select
                  { // single load 
-                   model_to_load.model.list(model_to_load.where,function (cursor)
+                   info_of_model_to_load.model.select(info_of_model_to_load.where,function (cursor)
                    {
                    cursor.toArray(function(err, items)
                    {
-                     //sys.puts("inner model3---------------+++++++++++++++++++++++++++++++++");
-                     //sys.puts(sys.inspect(model_to_load,0));
-                     //sys.puts(sys.inspect(model_to_load))
-                     retdata['error_name']                      = 'error_'       +items_to_load_key;
-                     retdata['error_'      +items_to_load_key]  = err;
-                     
-                     retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
-                     retdata['cursor_'      +items_to_load_key] = items;
-                     
-                     retdata['model_name']                      = 'model_'       +items_to_load_key;
-                     retdata['model_'       +items_to_load_key] = model_to_load.model;
-                     
-                     retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
-                     retdata['sub_cursors_' +items_to_load_key] = loaded_subitems;
-                     //sys.puts("inner retdata3---------------+++++++++++++++++++++++++++++++++");
-                     //sys.puts(sys.inspect(retdata,0));
-                     //sys.puts(sys.inspect(   items ));
-                     call_count--;  if(call_count==0)     callback();
+                         //sys.puts("inner model3---------------+++++++++++++++++++++++++++++++++");
+                         //sys.puts(sys.inspect(info_of_model_to_load,0));
+                         //sys.puts(sys.inspect(info_of_model_to_load))
+                         retdata['error_name']                      = 'error_'       +items_to_load_key;
+                         retdata['error_'      +items_to_load_key]  = err;
+                         
+                         if(info_of_model_to_load.fill_empty)
+                         {
+                          for(var i=0;i<items.length;i++)
+                          {
+                           _.add(items[i],info_of_model_to_load.empty_object);
+                          }
+                         }
+                         
+                         retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
+                         retdata['cursor_'      +items_to_load_key] = items;
+                                              
+                         if(info_of_model_to_load.load_one)
+                         {
+                          retdata['item_name']                       = items_to_load_key;
+                          retdata[items_to_load_key]                 = items.length>0?items[0]:_.clone(info_of_model_to_load.model.empty_object);
+                         }
+                         
+                         retdata['model_name']                      = 'model_'       +items_to_load_key;
+                         retdata['model_'       +items_to_load_key] = info_of_model_to_load.model;
+                         
+                         retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
+                         retdata['sub_cursors_' +items_to_load_key] = loaded_subitems;
+                         //sys.puts("inner retdata3---------------+++++++++++++++++++++++++++++++++");
+                         //sys.puts(sys.inspect(retdata,0));
+                         //sys.puts(sys.inspect(   items ));
+                         call_count--;  if(call_count==0)     callback();
+                         //
                    });//toarray
-                   });//list
+                   });//select
                  }
                  //fs.readFile(__filename, group_slot);
 
                 }); // next tick
-                })(model_to_load2,items_to_load_key2);// subfunction
+                })(info_of_model_to_load2,items_to_load_key2);// subfunction
                }; // if has own
               } //for in
              } // else of empty
@@ -543,7 +594,7 @@ function App()
         //sys.puts('select sub items: selections.'+selection.fieldname+'.fieldname = '+selection.fieldname);
         if(!selection.where)selection.where=null;
      
-        selection.submodel.list(selection.where,function (cursor)
+        selection.submodel.select(selection.where,function (cursor)
         {
          try{
 //          sys.puts('ret list' + sys.inspect(cursor));
@@ -597,7 +648,7 @@ function App()
        list:           { use: true, agregate : null, width : null, ftype: 'text' /* text / image */, wrap : true, quicksearch: true, extsearch: false, tempalte:null /* null or custom template function or file name etc */, },
        view:           { use: true, title: null,                   ftype: 'text' /* text / image */, },
        edit:           { use: true, title: null, readonly:false,   ftype: 'text' /* text / date / password / radio / checkbox / select / textarea / html / file / hidden */, },
-       add:            { use: true, defaultvalue: '', },
+       add:            { use: true, /*default_value: '',*/ },
        multiupdate:    { use: true, },
        advancedsearch: { use: true, operator1: 'like', operator2:'like', /*  user select / > / < / >= / <= / between / like / not like / starts with / ends with */ tempalte:null /* null or custom template function orfile name etc */, },
        viewtag:        {
@@ -728,6 +779,7 @@ function App()
      add: function( data , callback )
      {
       var that=this;
+      this.preprocess_document(data , true);
       that.beforeadd( data , function (){ 
        that.doadd( data , function (data2){ 
         that.afteradd( data2 , function (){ 
@@ -746,26 +798,28 @@ function App()
      update: function( where ,data ,callback )
      {
       var that=this;
+      this.preprocess_document(data , false);
       that.beforeupdate( where ,data , function (){ 
        that.doupdate( where ,data , function (where ,data2){ 
         that.afterupdate( where ,data2 , function (){ 
          if(callback)callback(where ,data2); } ); } ); } );
      },
      
-     list: function( where , callback)
+     select: function( where , callback)
      {
       var that=this;
-      that.beforelist( where , function ()
+      that.beforeselect( where , function ()
       {
-       that.dolist( where , function (cursor)
+       that.doselect( where , function (cursor)
        {  
-        that.afterlist( where , cursor, function (cursor2)
+        that.afterselect( where , cursor, function (cursor2)
         {
          if(callback){ callback(cursor2); }
         } );
        } );
       } );
      },
+     
      multiupdate: function( where )
      {
       
@@ -782,9 +836,14 @@ function App()
      {
       
      },
-     save: function( data )
+     save: function( data , callback)
      {
-      
+    	 this.preprocess_document(data , data._id!=null);
+    	 this.collection.save(data , {} ,function(err , result){
+    		 console.log(sys.inspect(err));
+    		 console.log(sys.inspect(result));
+    		 callback();
+    	 });
      },
      addpages: function(callback)
      {
@@ -871,8 +930,10 @@ function App()
  
      },
      
-     dolist: function(where , callback )
+     doselect: function(where , callback )
      {
+      //http://www.slideshare.net/kbanker/mongodb-schema-design-mongony
+     
 	  // http://www.mongodb.org/display/DOCS/Querying
 	  // http://www.mongodb.org/display/DOCS/Queries+and+Cursors
 	  // http://www.mongodb.org/display/DOCS/Advanced+Queries
@@ -1004,7 +1065,7 @@ function App()
      {
       if(callback)callback(where,data);
      },
-     afterlist: function(where , cursor, callback)
+     afterselect: function(where , cursor, callback)
      {
       if(callback)callback(cursor);
      },
@@ -1057,6 +1118,7 @@ function App()
      // before event functions //////////////
      beforeadd: function( data1 , callback )
      {
+      data1 = this.preprocess_document(data1 , true);
       if(callback)callback(data1);
      },
      beforedel: function( where , callback )
@@ -1067,7 +1129,7 @@ function App()
      {
       if(callback)callback(where,data);
      },
-     beforelist: function(where,callback)
+     beforeselect: function(where,callback)
      {
       if(callback)callback();
      },
@@ -1114,6 +1176,55 @@ function App()
      beforesetuplast: function(callback)
      {
       if(callback)callback();
+     },
+     preprocess_document: function(data , add)
+     {
+      var model = this;
+      console.log(sys.inspect(data));
+      for(var x in model.fields)
+      {
+       if( model.fields.hasOwnProperty( x))
+       {
+        var field = model.fields[x];
+        //console.log(sys.inspect(field.edit));
+        //console.log(sys.inspect(field.general.title));
+        //console.log(sys.inspect(data.x));
+        //every time especialy on update
+        if(field.edit.ftype==='select' && 
+           field.edittag.lookup.usetable && 
+           field.edittag.lookup.linkedfield=='_id')
+        {
+         if (x in data && typeof data[x]==='string' && data[x]!='')
+         {
+          data[x]=app.ObjectID.createFromHexString(data[x]); 
+         }
+         else
+         {
+          delete data[x];   
+         }
+        }
+        if(field.general.ftype==='date')
+        {
+         if (x in data && typeof data[x]==='string' && data[x]!='')
+         {
+          data[x]=app.phpjs.strtotime(data[x]); 
+         }
+         else
+         {
+          delete data[x];   
+         } 
+        }
+        // on add
+        if(add)
+        {
+         if ('default_value' in field.add)
+         {
+          data[x]=field.add.default_value;
+         }
+        }
+       }
+      }
+      return data;
      },
      // end before event functions //////////////
      pages:
@@ -1212,3 +1323,7 @@ function App()
 
 var app = new App();
 this.app = app;
+   autoreload.watchrel("httputils.js", function (newmodule)
+   {
+    app.httputils=newmodule;
+   });

@@ -152,6 +152,7 @@ this.post=function (req, res, callback)
       }
      });
     }catch(e){console.log(e.stack);}
+    console.log("post readble:"+(req.connection.readable));
     req.resume();
     console.log("POST10");
   }  

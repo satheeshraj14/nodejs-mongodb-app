@@ -57,15 +57,7 @@ this.page=function(app,model)
             if(data['model_edit']._id)
             {
 
-             var where={'_id':app.ObjectID.createFromHexString(data['model_edit']['_id'])};
-             for(var x in page.model.fields)
-             {
-              if( page.model.fields.hasOwnProperty( x))
-              {
-               if(page.model.fields[x].edit.ftype==='select' && page.model.fields[x].edittag.lookup.usetable && page.model.fields[x].edittag.lookup.linkedfield=='_id' )
-                 data['model_edit'][x]=app.ObjectID.createFromHexString(data['model_edit'][x]); 
-              }
-             }
+             var where={'_id':app.ObjectID.createFromHexString(data['model_edit']['_id'])};            
              delete data['model_edit']['_id'];
              
   
