@@ -60,7 +60,7 @@ this.page=function(app,model)
              var where={'_id':app.ObjectID.createFromHexString(data['model_del']['_id'])};
              delete data['model_del']['_id'];
              // sys.puts( sys.inspect(where)); 
-             page.model.del(where,function (where ,datawithkey)
+             page.model.remove(where,function (where ,datawithkey)
              {
               //sys.puts( sys.inspect(where)); 
               updateok=true; 

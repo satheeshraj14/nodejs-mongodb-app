@@ -4,6 +4,8 @@ var querystring = require('querystring');
 var sys = require('sys');
 var multipart = require("deps/multipart-js/lib/multipart");
 var fs = require('fs');
+var _ = require('deps/nodejs-clone-extend/merger');
+this.temp=__dirname+'/temp/';
 
 this.postdecoders =
 {
@@ -11,20 +13,37 @@ this.postdecoders =
  'application/json': JSON.parse,
 };
 
-
-function upload_files(req, res, request_vars,folder,callback) 
+var mylog='';
+function upload_files(request, response, folder, callback) 
 {
+
+  // request.setEncoding('binary'); // do not set encoding to binary it needs it as buffer
+  // the StringDecoder is initilized lazyly to Stream._decoder and if it is existes it decodes strings to String from Buffer.
+  // i need buffer so it is bad to set encoding.
+  // 
+  // console.log(sys.inspect(request)); // see the request stream.
+  //
+  //if i will whish to sue decoder it goes like this:
+  //
+  //var StringDecoder = require("string_decoder").StringDecoder; // lazy load
+  //this._decoder = new StringDecoder(encoding);
+  //var string = self._decoder.write(pool.slice(start, end));
+  //if (string.length) self.emit('data', string);
+  
+
   // matches .xxxxx or [xxxxx] or ['xxxxx'] or ["xxxxx"] with optional [] at the end
   var chunks = /(?:(?:^|\.)([^\[\(\.]+)(?=\[|\.|$|\()|\[([^"'][^\]]*?)\]|\["([^\]"]*?)"\]|\['([^\]']*?)'\])(\[\])?/g;
   // Parse a key=val string.
-  function add_to_object_by_name(obj, key, value) // a modified version of QueryString.parse = QueryString.decode 
+  function add_to_object_by_name (obj, key, value) // a modified version of QueryString.parse = QueryString.decode 
   {
+   try
+   {
       var res=obj,next;
       key.replace(chunks, function (all, name, nameInBrackets, nameIn2Quotes, nameIn1Quotes, isArray, offset) {
         var end = offset + all.length == key.length;
         name = name || nameInBrackets || nameIn2Quotes || nameIn1Quotes;
         next = end ? value : {};
-        next = next && (+next == next ? +next : next);
+        //next = next && (+next == next ? +next : next);
         if (Array.isArray(res[name])) {
           res[name].push(next);
           res = next;
@@ -44,31 +63,44 @@ function upload_files(req, res, request_vars,folder,callback)
           }
         }
       });
+    }
+    catch(err)
+    {
+     err.message="error parsing variable names of post , form elements.\r\n"+err.message;
+     err.stack="error parsing variable names of post , form elements.\r\n"+err.stack;
+     throw err
+    }
     return obj;
   };
+  
 
-  req.setEncoding('binary');
   var parser = multipart.parser();
-  parser.headers = req.headers;
+  parser.headers = request.headers;
   
   var request_vars=[];
   var name, savename, filename, text, file;
   var inquee=0,finished=false;  
-  var fileid=0;
   if(folder.charAt(folder.length-1)!='/') folder+='/';
    
   parser.addListener('onPartBegin', function(part)
   {
     inquee++;
     name = part.name;
+    //console.log('begin name '+ name)
     if(!part.filename)
     {
+     //request.setEncoding('utf8');
      text="";
      file=false;
+     inquee--;
+     if(finished&&inquee==0)
+     {
+      callback(null,request_vars); // if file writing goes beyond parsing, call callback it later when done.
+     }
     }
     else
     {
-      var randomname=(((new Date()).getTime()*10000)+(Math.floor(Math.random() * 9999)))+"_"+(fileid++)+".tmp";
+      var randomname=(((new Date()).getTime()*10000)+(Math.floor(Math.random() * 9999)))+".tmp";
       savename=folder+randomname;
       file = fs.createWriteStream(savename,{ 'flags': 'w', 'encoding': 'binary', 'mode': 0666 });
       file.addListener('close', function(part)
@@ -80,31 +112,59 @@ function upload_files(req, res, request_vars,folder,callback)
        }
       });
     }
-    // instead onData and onPartEnd, a pump should be set up here (after making multipart js behaive like a stream)
+    // instead onData and onPartEnd, a pump should be set up here
     // like: sys.pump(part, file, function()  { sys.debug('file pump end');  });
   });
   
+  /*
+  function(part)
+  {
+     inquee--;
+     if(finished&&inquee==0)
+      callback(null,request_vars); // if file writing goes beyond parsing, call callback it later when done.
+  }
+  */
   parser.addListener('onData', function(chunk) { if(file) file.write(chunk); else  text+=chunk;  });
   parser.addListener('onPartEnd', function(part)
   {
+   //console.log(sys.inspect(part.headers['content-type']));
+   //console.log(sys.inspect(part.headers['content-disposition']));
    if(file)
    {
-    add_to_object_by_name(request_vars,part.name,{filename:part.filename,path:savename,mime:part.mime});
+    add_to_object_by_name(request_vars,part.name,{filename:part.filename,path:savename,mime:part.headers['content-type']});
     file.end();
    }
    else
    {
+    
     add_to_object_by_name(request_vars,part.name,text);
    }
   });
   parser.addListener('onEnd', function(part)   {  finished=true;  if(inquee==0) callback(null,request_vars);}); 
-  parser.addListener('onError', function(err) {  sys.debug(' parser on end  '); callback(err,request_vars); });
-  sys.pump(req, parser, function()  { sys.debug('request end');  });
+  parser.addListener('onError', function(err) {  console.log(' parser on end  '); callback(err,request_vars); });
+  sys.pump(request, parser, function()  { console.log('request end');  });
 }
 
-this.post=function (req, res, callback)
+
+this.post=function (req, res, callback )
 {
- console.log("POST5");
+ //console.log("post received:");
+ //console.log(sys.inspect(req.post));
+ callback(req.post);
+}
+
+this.realpost=function (req, res, callback ) 
+// called first of all to overcome a bug in node js 
+// (it could be called any time in any page.
+// but there is a bug: the request object dies at the end of a function,
+// for example if the later work is done in a settimeout
+// so to overcome i have renamed post to realpost
+// called realpost as first thing in process request
+// it continues to the callback
+// later it uses the "post" merthod to get what was posted
+// and fetched at the begining with realpost)
+// when this bug is fixed i can rename back realpost to post.
+{
  if(
   req.method==='POST'
   // || req.method=='PUT' 
@@ -119,18 +179,21 @@ this.post=function (req, res, callback)
     decoder=this.postdecoders[content_type];
   }
   var data = '';
-  console.log("content-type:"+req.headers['content-type']);
-  if(req.headers['content-type']!='multipart/form-data') 
+  if(req.headers['content-type'].indexOf('multipart/form-data')==-1) 
   {
     try
     {
-     console.log("POST6");
+     //console.log("POST6");
      req.setEncoding('utf8');
-     //console.log(sys.inspect(req));
-     req.on('data', function(chunk) {  console.log("POST7"); data += chunk; });
+     //console.log(sys.inspect(req._events));
+     req.on('data', function(chunk)
+     {
+      // console.log("POST7");
+      data += chunk;
+     });
      req.on('end', function()
-     { 
-      console.log("POST8");
+     {
+      //console.log("POST8");
       //req.postmime = content_type;
       //req.postraw = data;
       if(decoder)
@@ -142,29 +205,31 @@ this.post=function (req, res, callback)
        }
        catch (err)
        {
-        callback();
+        callback({});
        }
       }
       else
       {
-       console.log("POST9");
+       //console.log("POST9");
        callback({});
       }
      });
+
     }catch(e){console.log(e.stack);}
-    console.log("post readble:"+(req.connection.readable));
-    req.resume();
-    console.log("POST10");
-  }  
+    //console.log("post readble:"+(req.connection.readable));
+    //req.resume();
+  }
   else
   {
-    upload_files(req, res,'/tmp/',function(error,data)
-     {
-      if(error!==null) callback({});
-      else             callback(data);
-     });
-  }  
- }   
+   //console.log("GONE TO UPLOAD FILES");
+    upload_files(req, res,this.temp,function(error,data)
+    {
+     req.post = data;
+     if(error!==null) callback({});
+     else             callback(data);
+    });
+  }
+ }
  else
  {
   callback({});
@@ -172,12 +237,13 @@ this.post=function (req, res, callback)
 }
  
 this.referrer = function(req, res, callback) 
-{ // actualy no need call back here because it is not transfering any thing
+{
+ // actualy no need call back here because it is not transfering any thing
  if(callback)
   callback(req, res,req.headers.referrer || req.headers.referer || "");
  else
   return req.headers.referrer || req.headers.referer || "";
-} 
+}
  
 this.redirect = function(req, res, url, callback, code )
 {

@@ -7,6 +7,10 @@ var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //lo
 var fs = require('fs');    // allaws to open files
 var app=require('app_skeleton').app; // include  basic definision of a model and a filed in a model
 
+process.on('uncaughtException', function (err) {
+  console.log('Caught exception: ' + err.stack);
+});
+
 //var milliseconds = require('deps/node-microseconds/lib/node-microseconds').milliseconds;
 console.log("start require modules");
 if(process.argv[3])
@@ -140,13 +144,24 @@ app = _.extend(app,{
   {
    return function (req,res)
    {
-    //app.models.mainpage.add({test:'shimon'});
-    app.serveRequest(req,res);
+    if (req.method==='POST')
+    {
+     app.httputils.realpost(req,res,function (querydata)
+     {
+      app.serveRequest(req,res);
+     });
+    }
+    else
+    {
+     app.serveRequest(req,res);    
+    }
    }
   },
   
   serveRequest: function(req, res, newi)
   {
+   try
+   {
     if (!req.parsedurl)
     {
      req.parsedurl=url.parse(req.url,true);
@@ -194,6 +209,17 @@ app = _.extend(app,{
       }
       if(typeof app.url_routes[i].page!='undefined')
       {
+        /*
+        //var req2=req,res2=res;
+        setTimeout(function(){
+        app.httputils.post(req,res,function (querydata){
+              console.log("success"); 
+              res.writeHead(200, { 'Content-Type': 'text/html'});
+              res.write(sys.inspect(querydata));
+              res.end();
+        });},530);
+ return true;*/
+ 
        if(app.url_routes[i].page.main( req, res, app.url_routes[i].page, i ))
        {
         return true; // true means break the preview function
@@ -215,12 +241,22 @@ app = _.extend(app,{
     
     if(!urlmatch)
     {
-     sys.puts("not found: "+myurl.pathname);
+     sys.puts("not found: "+req.parsedurl.pathname);
      //app.urls[0][1][app.urls[0][2]](req, res);
      res.writeHead(202, { 'Content-Type': 'text/html'});
-     res.write("<html><head><title>Unhandeld request</title></head><body>hendle request (req, res) \r\n did not match any url: \r\n "+myurl.pathname+" \r\n<br\ > <a href='/'>click here</a> to go to the main page</body></html>");
+     res.write("<html><head><title>Unhandeld request</title></head><body>hendle request (req, res) \r\n did not match any url: \r\n "+req.parsedurl.pathname+" \r\n<br\ > <a href='/'>click here</a> to go to the main page</body></html>");
      res.end();
     }
+    }
+    catch(error)
+    {
+     sys.puts("error: "+req.parsedurl.pathname);
+     //app.urls[0][1][app.urls[0][2]](req, res);
+     res.writeHead(202, { 'Content-Type': 'text/html'});
+     res.write("<html><head><title>Server Error</title></head><body>Server Error in Handle Request (url: "+req.parsedurl.pathname+"): \r\n  <pre>"+error.stack+"</pre> \r\n<br\ > <a href='/'>click here</a> to go to the main page</body></html>");
+     res.end();
+    }
+    
     //this.writePixel(res);
 
     //var env = this.splitQuery(req.url.split('?')[1]);

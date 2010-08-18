@@ -1,1 +1,12 @@
-<input type="file" name="<%=vars.name%>" value="<?=value?>" />
+<span>
+<input type="file" name="<%=this.htmlencode(model_name+'['+fieldname+'][file]')%>" title="<?= this.htmlencode(value || "") ?>" />
+<?
+if(value)
+{
+?><% /*<input type="text" name="< %=this.htmlencode(model_name+'['+fieldname+'][value]')% >" value="< ?= this.htmlencode(value || "") ? >" />*/%>
+<label><input type="radio" name="<%=this.htmlencode(model_name+'['+fieldname+'][action]')%>" value="keep" checked /> keep </label>
+<label><input type="radio" name="<%=this.htmlencode(model_name+'['+fieldname+'][action]')%>" value="replace"  /> replace </label>
+<label><input type="radio" name="<%=this.htmlencode(model_name+'['+fieldname+'][action]')%>" value="delete"  /> delete </label>
+<?
+}
+?></span>

@@ -6,8 +6,7 @@ var ObjectID= require('deps/node-mongodb-native/lib/mongodb/bson/bson').ObjectID
 var step=require('deps/step/lib/step');
 var phpjs = require('phpjs'); // http://phpjs.org/packages/view/2693/name:806d77a73ce93d851a4620f4a788acd7
 
-var autoreload= require('deps/node-hot-reload');
-autoreload.path=__dirname;
+var autoreload= require('deps/node-hot-reload');autoreload.path=__dirname;
 
 /*
 
@@ -523,7 +522,8 @@ function App()
                    });//subitems2
                  }
                  else // load select
-                 { // single load 
+                 {
+                   // single load 
                    info_of_model_to_load.model.select(info_of_model_to_load.where,function (cursor)
                    {
                    cursor.toArray(function(err, items)
@@ -700,7 +700,7 @@ function App()
     this.basicfields.number   = _.cloneextend(app.basicfields.normal, { edittag: { validation: { validate: false, type: 'number'} }, general: { ftype: 'number'} });
     this.basicfields.lookup   = _.cloneextend(app.basicfields.normal, { edit: { ftype: 'select' }, edittag: { select: { lookup: true }, lookup: { usetable: true}} });
     this.basicfields.keyvalue = _.cloneextend(app.basicfields.normal, { edit: { ftype: 'select' }, edittag: { select: { lookup: true }, lookup: { usetable: false}} });
-    this.basicfields.file   = _.cloneextend(app.basicfields.normal, { edittag: { }, general: { ftype: 'text'} });
+    this.basicfields.file     = _.cloneextend(app.basicfields.normal, { edit: { ftype: 'file' } });
 
     
     this.basicmodel=
@@ -775,51 +775,50 @@ function App()
      fields:
      {
      },
-     // useful utility functions //////////////
-     add: function( data , callback )
+
+     save: function( data , callback)
      {
-      var that=this;
-      this.preprocess_document(data , true);
-      that.beforeadd( data , function (){ 
-       that.doadd( data , function (data2){ 
-        that.afteradd( data2 , function (){ 
-         if(callback)callback(data2); } ); } ); } );
-     },
-     
-     del: function( where, callback )
-     {  
-      var that=this;
-      that.beforedel( where , function (){
-       that.dodel( where , function (){
-        that.afterdel( where , function (){
-         if(callback)callback(); } ); } ); } );     
-     },
-     
-     update: function( where ,data ,callback )
+    	 this.preprocess_document(data , data._id!=null);
+    	 this.collection.save(data ,function(err , result){
+    		 callback(result);
+    	 });
+     },   
+
+     insert: function( data2 ,callback )
      {
-      var that=this;
-      this.preprocess_document(data , false);
-      that.beforeupdate( where ,data , function (){ 
-       that.doupdate( where ,data , function (where ,data2){ 
-        that.afterupdate( where ,data2 , function (){ 
-         if(callback)callback(where ,data2); } ); } ); } );
+      this.preprocess_document(data2 , true);
+      this.collection.insert(data2,function (err,doc){ 
+       if(err) throw err;
+       //sys.puts('sucsess');
+       //sys.puts(JSON.stringify(doc) );
+       if(callback) callback(doc);
+      });
      },
      
-     select: function( where , callback)
+     remove: function( where, callback )
      {
-      var that=this;
-      that.beforeselect( where , function ()
-      {
-       that.doselect( where , function (cursor)
-       {  
-        that.afterselect( where , cursor, function (cursor2)
-        {
-         if(callback){ callback(cursor2); }
-        } );
-       } );
-      } );
+      // delete files here
+      this.collection.remove( where, function (err,doc){ 
+       if(err) throw err;
+       //sys.puts('sucsess');
+       //sys.puts(JSON.stringify(doc) );
+      });
+      if(callback) callback();
      },
      
+     update: function( where, data2 ,callback )
+     {
+      this.preprocess_document(data2 , false);
+      //sys.puts(sys.inspect([where,data2]));
+      this.collection.update(where,data2,function (err,doc){ 
+       if(err) throw err;
+       //sys.puts('sucsess');
+       //sys.puts(JSON.stringify(doc) );
+       if(callback) callback(doc);
+      });
+ 
+     },
+     /*
      multiupdate: function( where )
      {
       
@@ -832,105 +831,99 @@ function App()
      {
       
      },
-     view: function( where )
+     onview: function( where )
      {
       
      },
-     save: function( data , callback)
+     */
+     preprocess_document: function(data , add)
      {
-    	 this.preprocess_document(data , data._id!=null);
-    	 this.collection.save(data , {} ,function(err , result){
-    		 console.log(sys.inspect(err));
-    		 console.log(sys.inspect(result));
-    		 callback();
-    	 });
-     },
-     addpages: function(callback)
-     {
-      var that=this;
-      that.beforeaddpages(  function (){ 
-       that.doaddpages( function (){ 
-        that.afteraddpages( function (){ 
-         if(callback)callback(); } ); } ); } );  
-     },
-     addurls: function(callback)
-     {
-      var that=this;
-      that.beforeaddurls(  function (){ 
-       that.doaddurls( function (){ 
-        that.afteraddurls( function (){ 
-         if(callback)callback(); } ); } ); } );  
-     },
+      var model = this;
+      //console.log(sys.inspect(data));
+      
+      if('_id' in data && typeof data['_id']==='string')
+      {
+       if(data['_id']=='')
+       {
+        if(add) delete data['_id'];   
+       }
+       else 
+       {
+        data['_id']=app.ObjectID.createFromHexString(data['_id']); 
+       }
+      }
+        
+      for(var x in model.fields)
+      {
+       if( model.fields.hasOwnProperty( x))
+       {
+        var field = model.fields[x];
+        //console.log(sys.inspect(field.edit));
+        //console.log(sys.inspect(field.general.title));
+        //console.log(sys.inspect(data.x));
+        //every time especialy on update
 
-     init: function(callback)
-     {
-      var that=this;
-      that.beforeinit(  function (){ 
-       that.doinit( function (){ 
-        that.afterinit( function (){ 
-         if(callback)callback(); } ); } ); } );  
-     },
+        if(field.edit.ftype==='select' && 
+           field.edittag.lookup.usetable && 
+           field.edittag.lookup.linkedfield=='_id')
+        {
+         if (x in data && typeof data[x]==='string')
+         {
+          if(data[x]=='')
+          {
+           delete data[x];   
+          }
+          else        
+          {
+           data[x]=app.ObjectID.createFromHexString(data[x]); 
+          }
+         }
+        }
 
-     setupfirst: function(callback)
-     {
-      var that=this;
-      that.beforesetupfirst(  function (){ 
-       that.dosetupfirst( function (){ 
-        that.aftersetupfirst( function (){ 
-         if(callback)callback(); } ); } ); } );  
+        if(field.edit.ftype==='file')
+        {
+         if (x in data && typeof data[x]==='object')
+         {
+          console.log(data);
+         
+/*
+          if(data[x]=='')
+          {
+           delete data[x];   
+          }
+          else        
+          {
+           data[x]=app.ObjectID.createFromHexString(data[x]); 
+          }
+*/
+         }
+        }
+        
+        if(field.general.ftype==='date')
+        {
+         if (x in data && typeof data[x]==='string' && data[x]!='')
+         {
+          data[x]=app.phpjs.strtotime(data[x]); 
+         }
+         else
+         {
+          delete data[x];   
+         }
+        }
+        
+        // on add
+        if(add)
+        {
+         if ('default_value' in field.add)
+         {
+          data[x]=field.add.default_value;
+         }
+        }
+       }//if
+      }//for
+      return data;
      },
-     setup: function(callback)
-     {
-      var that=this;
-      that.beforesetup(  function (){ 
-       that.dosetup( function (){ 
-        that.aftersetup( function (){ 
-         if(callback)callback(); } ); } ); } );  
-     },
-     setuplast: function(callback)
-     {
-      var that=this;
-      that.beforesetuplast(  function (){ 
-       that.dosetuplast( function (){ 
-        that.aftersetuplast( function (){ 
-         if(callback)callback(); } ); } ); } );  
-     },
-           
-     // end useful utility functions //////////////
-     // real action functions //////////////
-     doadd: function( data2 ,callback )
-     {
-      this.collection.insert(data2,function (err,doc){ 
-       if(err) throw err;
-       //sys.puts('sucsess');
-       //sys.puts(JSON.stringify(doc) );
-       if(callback) callback(doc);
-      });
-     },
-     
-     dodel: function( where, callback )
-     {
-      this.collection.remove( where, function (err,doc){ 
-       if(err) throw err;
-       //sys.puts('sucsess');
-       //sys.puts(JSON.stringify(doc) );
-      });
-      if(callback) callback();
-     },
-     
-     doupdate: function( where, data2 ,callback )
-     {
-      //sys.puts(sys.inspect([where,data2]));
-      this.collection.update(where,data2,function (err,doc){ 
-       if(err) throw err;
-       //sys.puts('sucsess');
-       //sys.puts(JSON.stringify(doc) );
-       if(callback) callback(doc);
-      });
- 
-     },
-     
-     doselect: function(where , callback )
+     select: function(where , callback ) // skip(4).limit(8);
      {
       //http://www.slideshare.net/kbanker/mongodb-schema-design-mongony
      
@@ -978,27 +971,18 @@ function App()
       //  });
 
      },
-     domultiupdate: function( where )
+     getall: function(where , callback)
      {
-      
-     },
-     doreport: function( where )
-     {
-      
-     },
-     dosearch: function( where )
-     {
-      
-     },
-     doview: function( where )
-     {
-      
-     },
-     dosave: function( data )
-     {
-      
-     },
-     doaddpages: function (callback)
+      this.select(where,function (cursor)
+      {
+       cursor.toArray(function(err, items)
+       {
+        callback(items);
+       });
+      });
+     }
+     ,
+     addpages: function (callback)
      {
       var p,tempalte_name,template_function;
       for(p in this.pages)
@@ -1012,7 +996,7 @@ function App()
       }
       if(callback)callback(callback);
      },
-     doaddurls: function (callback)
+     addurls: function (callback)
      {
       var p;
       // adlater calling route before, route after
@@ -1026,7 +1010,15 @@ function App()
 
       if(callback)callback(callback);
      },
-     doinit: function( data )
+     setupfirst: function( data )
+     {
+
+     },
+     setup: function( data )
+     {
+
+     },
+     setuplast: function( data )
      {
       app.prepare_subitems_lists(this);
       var self = this;
@@ -1035,198 +1027,7 @@ function App()
       });
       this.addpages();
       this.addurls();
-      
      },
-     dosetupfirst: function( data )
-     {
-
-     },
-     dosetup: function( data )
-     {
-
-     },
-     dosetuplast: function( data )
-     {
-
-      this.init();
-
-     },
-     // end real action functions //////////////
-     // after event functions //////////////
-     afteradd: function( data , callback )
-     {
-      if(callback)callback(data);
-     },
-     afterdel: function( where , callback  )
-     {
-      if(callback)callback(where);
-     },
-     afterupdate: function( where, data , callback  )
-     {
-      if(callback)callback(where,data);
-     },
-     afterselect: function(where , cursor, callback)
-     {
-      if(callback)callback(cursor);
-     },
-     aftermultiupdate: function( where )
-     {
-      
-     },
-     afterreport: function( where )
-     {
-      
-     },
-     aftersearch: function( where )
-     {
-      
-     },
-     afterview: function( where )
-     {
-      
-     },
-     aftersave: function( data )
-     {
-      
-     },
-     afteraddpages: function(callback)
-     {
-      if(callback)callback();
-     },
-     afteraddurls: function(callback)
-     {
-      if(callback)callback();
-     },
-     afterinit: function(callback)
-     {
-      if(callback)callback();
-     },
-     
-     aftersetupfirst: function(callback)
-     {
-      if(callback)callback();
-     },
-     aftersetup: function(callback)
-     {
-      if(callback)callback();
-     },
-     aftersetuplast: function(callback)
-     {
-      if(callback)callback();
-     },
-     // end after event functions //////////////
-     // before event functions //////////////
-     beforeadd: function( data1 , callback )
-     {
-      data1 = this.preprocess_document(data1 , true);
-      if(callback)callback(data1);
-     },
-     beforedel: function( where , callback )
-     {
-      if(callback)callback();
-     },
-     beforeupdate: function( where,data,callback )
-     {
-      if(callback)callback(where,data);
-     },
-     beforeselect: function(where,callback)
-     {
-      if(callback)callback();
-     },
-     beforemultiupdate: function( where )
-     {
-      
-     },
-     beforereport: function( where )
-     {
-      
-     },
-     beforesearch: function( where )
-     {
-      
-     },
-     beforeview: function( where )
-     {
-      
-     },
-     beforesave: function( data )
-     {
-      
-     },
-     beforeaddpages: function(callback)
-     {
-      if(callback)callback();
-     },
-     beforeaddurls: function(callback)
-     {
-      if(callback)callback();
-     },
-     beforeinit: function(callback)
-     {
-      if(callback)callback();
-     },
-     beforesetupfirst: function(callback)
-     {
-      if(callback)callback();
-     },
-     beforesetup: function(callback)
-     {
-      if(callback)callback();
-     },
-     beforesetuplast: function(callback)
-     {
-      if(callback)callback();
-     },
-     preprocess_document: function(data , add)
-     {
-      var model = this;
-      console.log(sys.inspect(data));
-      for(var x in model.fields)
-      {
-       if( model.fields.hasOwnProperty( x))
-       {
-        var field = model.fields[x];
-        //console.log(sys.inspect(field.edit));
-        //console.log(sys.inspect(field.general.title));
-        //console.log(sys.inspect(data.x));
-        //every time especialy on update
-        if(field.edit.ftype==='select' && 
-           field.edittag.lookup.usetable && 
-           field.edittag.lookup.linkedfield=='_id')
-        {
-         if (x in data && typeof data[x]==='string' && data[x]!='')
-         {
-          data[x]=app.ObjectID.createFromHexString(data[x]); 
-         }
-         else
-         {
-          delete data[x];   
-         }
-        }
-        if(field.general.ftype==='date')
-        {
-         if (x in data && typeof data[x]==='string' && data[x]!='')
-         {
-          data[x]=app.phpjs.strtotime(data[x]); 
-         }
-         else
-         {
-          delete data[x];   
-         } 
-        }
-        // on add
-        if(add)
-        {
-         if ('default_value' in field.add)
-         {
-          data[x]=field.add.default_value;
-         }
-        }
-       }
-      }
-      return data;
-     },
-     // end before event functions //////////////
      pages:
      {
       list:require('templates/default/list').page.call(this,app,this), 
@@ -1323,6 +1124,7 @@ function App()
 
 var app = new App();
 this.app = app;
+
    autoreload.watchrel("httputils.js", function (newmodule)
    {
     app.httputils=newmodule;

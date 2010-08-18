@@ -53,7 +53,7 @@ this.page=function(app,model)
         if(req.method==='POST')
          app.httputils.post(req,res,function (data)
          {
-          page.model.add(data['model_add'],function (datawithkey)
+          page.model.insert(data['model_add'],function (datawithkey)
           {
            app.httputils.redirect(req,res,'/'+page.model.general.urlprefix+page.model.pages.list.pageurl);
            //res.writeHead(200, { 'Content-Type': 'text/html'});        

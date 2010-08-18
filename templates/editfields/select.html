@@ -14,6 +14,9 @@ if(s_subitems)
  var s_value=value || "";
  var s_sel_found=false;
  var s_key_is_id=(s_value_f=='_id');
+ var s_value_d1_is_id=(s_value_d1=='_id');
+ var s_value_d2_is_id=(s_value_d2=='_id');
+ 
  
  for(var i=0,l=s_rows.length;i<l;i++)
  {
@@ -22,12 +25,12 @@ if(s_subitems)
   ?>
   <option value="<?=this.htmlencode(s_key_is_id?s_row[s_value_f].toHexString():s_row[s_value_f])?>" <? 
   
-   if( s_row[s_value_f] == s_value || (s_row[s_value_f].id&&s_value.id? s_row[s_value_f].id==s_value.id:false ) ) { s_sel_found=true; echo +='selected'; } ?> ><? 
-  echo += this.htmlencode(s_row[s_value_d1] ) || "";
+   if( s_row[s_value_f] == s_value || (s_row[s_value_f].id&&s_value.id? s_row[s_value_f].id==s_value.id:false ) ) { s_sel_found=true; echo +='selected'; } ?> ><?
+   echo += this.htmlencode(s_value_d1_is_id&&s_row[s_value_d1].toHexString?s_row[s_value_d1].toHexString():s_row[s_value_d1]) || ""; 
   if(s_value_d2)
   {
-   echo += ', ';
-   echo += this.htmlencode(s_row[s_value_d2] ) || "";
+   echo += ', '; toHexString
+   echo += this.htmlencode(s_value_d2_is_id&&s_row[s_value_d2].toHexString?s_row[s_value_d2].toHexString():s_row[s_value_d2]) || "";
   }
   if(false)
   {
