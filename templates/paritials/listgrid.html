@@ -27,13 +27,16 @@ for(fieldname in model.fields)
 {
  field=model.fields[fieldname];
  // show field only if it is avlible for list
- 
+
+ //if(field.list.use){
  %><td><?
   if(row[<%=JSON.stringify(fieldname) %>])
    echo +=this.htmlencode(row[<%=JSON.stringify(fieldname) %>]<% if(fieldname=='_id') echo+='.toHexString()'%>);
   else
    echo +="&nbsp;";
  ?></td><% 
+ //}
+
 }
 %>
 <%if(!vars.nolinks){%>

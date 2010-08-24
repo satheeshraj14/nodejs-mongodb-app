@@ -12,12 +12,19 @@ for(fieldname in model.fields)
 {
  field=model.fields[fieldname];
  %>
+
  <?
   value=row[<%=JSON.stringify(fieldname) %>]<% if(fieldname=='_id') echo+='.toHexString()'%> || '';
  ?>
+ 
+
  <tr>
- <td><%=field.general.title%></td>
- <td><%=app.editfields[ field.edit.ftype ] (  this._.replace(vars,{'fieldname':fieldname,'field': field })  );%> 
+ <td>
+<%=field.general.title%>
+</td>
+ <td>
+  <%=app.editfields[ field.edit.ftype ] (  this._.replace(vars,{'fieldname':fieldname,'field': field })  );%>
+</td> 
  </tr>
  <% 
 }
