@@ -1,5 +1,8 @@
 var _ = require('deps/nodejs-clone-extend/merger');  //  lets do: _.extend(same,otherobjexts),  _.clone(obj) - creates new reference, see source to understand // 
 var sys = require('sys');
+var path = require('path');
+var fs = require('fs');
+
 var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //load double teplate module
 var httputils = require('httputils');
 var ObjectID= require('deps/node-mongodb-native/lib/mongodb/bson/bson').ObjectID;
@@ -33,12 +36,16 @@ var autoreload= require('deps/node-hot-reload');autoreload.path=__dirname;
 function App()
 {
     this.autoreload=autoreload;
-	this._=_;
-	this.phpjs=phpjs;
+	  this._=_;
+	  this.phpjs=phpjs;
+	  this.path=path;
+	  this.fs=fs;
     var app=this;
     this.server={port:8000};
     this.websocket={port:8000};
     this.templates_path=__dirname+'/templates/';
+    this.files_path=__dirname+'/files/';
+    this.root_path=__dirname;
     this.doubletemplate=doubletemplate;
     this.httputils=httputils;
     this.ObjectID=ObjectID;
@@ -55,7 +62,8 @@ function App()
 
     this.menus={}; 
     this.collections={};
-    
+
+
     this.templates= // master templates
     {
      pagefilename:__filename,
@@ -267,13 +275,13 @@ function App()
     }
     
     this.load_app_templates=function (callback)
-     {
-      this.load_templates1(this.templates);
-      this.load_templates1(this.editfields);
-      this.load_templates1(this.viewfields);      
-      if(callback)callback(callback);
-     };
-    
+    {
+     this.load_templates1(this.templates);
+     this.load_templates1(this.editfields);
+     this.load_templates1(this.viewfields);      
+     if(callback)callback(callback);
+    };
+   
 
     this.defaultvalidation=function ()
     {
@@ -339,11 +347,11 @@ function App()
        {
         //sys.puts(operations_type);
         //sys.puts(sys.inspect(field));
-        havelookup=field.edittag[ field[operations_type].ftype  ].lookup?true:false;
-        if(havelookup)
-        {
-         lookupinfo=field.edittag.lookup;
-        }
+         havelookup=field.edittag[ field[operations_type].ftype  ].lookup?true:false;
+         if(havelookup)
+         {
+          lookupinfo=field.edittag.lookup;
+         }
        }
         
        if(havelookup)
@@ -367,14 +375,8 @@ function App()
 
     this.fake_load_data= function(items_to_load,retdata,callback)
     {
-             var call_count=0;
-             if(!items_to_load)
-             {
-              retdata={};
-              callback();  // don't create group_slots if the array is empty otherwise it will not go to the next step
-             }
-             else
-             {
+             var call_count=1;
+
               for(var items_to_load_key2 in items_to_load)
               {
                if(items_to_load.hasOwnProperty(items_to_load_key2))
@@ -402,10 +404,21 @@ function App()
                        retdata[items_to_load_key]                = _.clone(info_of_model_to_load.model.empty_object);
                       }
                       //
-                      retdata['model_name']                      = 'model_'       +items_to_load_key;
+                      if(info_of_model_to_load.askey)
+                      {
+                       var askey={};
+                       //for(var i=0;i<items.length;i++)
+                       //{
+                       // askey[items[i]._id]=items[i];
+                       //}
+                       retdata['askey_name']                      = "askey_"+items_to_load_key;
+                       retdata["askey_"+items_to_load_key]        = askey;
+                      }
+                      //
+                      retdata['model_name']                       = 'model_'       +items_to_load_key;
                       retdata['model_'       +items_to_load_key]  = info_of_model_to_load.model;
                       //
-                      retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
+                      retdata['sub_cursors_name']                 = 'sub_cursors_' +items_to_load_key;
                       retdata['sub_cursors_' +items_to_load_key]  = loaded_subitems;
                       //sys.puts(sys.inspect(   items ));
                       call_count--;  if(call_count==0)     callback();
@@ -414,20 +427,15 @@ function App()
                 })(info_of_model_to_load2,items_to_load_key2);// subfunction
                }; // if has own
               } //for in
-             } // else of empty
-       
+
+             call_count--;  if(call_count==0)     callback();
     };
     
     this.load_data= function(items_to_load,retdata,callback)
     {
-             var call_count=0;
-             if(!items_to_load)
-             {
-              retdata={};
-              callback();  // don't create group_slots if the array is empty otherwise it will not go to the next step
-             }
-             else
-             {
+             var call_count=1;
+
+
               for(var items_to_load_key2 in items_to_load)
               {
                if(items_to_load.hasOwnProperty(items_to_load_key2))
@@ -439,6 +447,15 @@ function App()
                 //sys.puts(sys.inspect(info_of_model_to_load,0));
                 process.nextTick(function ()
                 {
+                 
+                 if(items_to_load_key=='homepage' && info_of_model_to_load.where && ('_id' in info_of_model_to_load.where) && (!info_of_model_to_load.where['_id'])) // have _id but it is null or undefined
+                 {
+                  console.log("load where:--"+require('sys').inspect(info_of_model_to_load.where));
+                  //info_of_model_to_load.load_subitems=false
+                  //info_of_model_to_load.load_items=false;
+                  //info_of_model_to_load.load_one=false;
+                 }
+                 
                  var loaded_subitems={},items={};
                  if(info_of_model_to_load.load_subitems && info_of_model_to_load.load_items)
                  { // multi load double
@@ -469,6 +486,30 @@ function App()
                          {
                           retdata['item_name']                      = items_to_load_key;
                           retdata[items_to_load_key]                = items.length>0?items[0]:_.clone(info_of_model_to_load.model.empty_object);
+                         }
+                         //
+                         if(info_of_model_to_load.askey)
+                         {
+                          var askey={};
+                          for(var i=0;i<items.length;i++)
+                          {
+                           askey[items[i]._id]=items[i];
+                          }
+                          retdata['askey_name']                      = "askey_"+items_to_load_key;
+                          retdata["askey_"+items_to_load_key]        = askey;
+                         }
+                         //
+                         if(info_of_model_to_load.asgroups)
+                         {
+                          var asgroups={},asgroupname=info_of_model_to_load.asgroups;
+                          for(var i=0;i<items.length;i++)
+                          {
+                           var key=items[i][asgroupname];
+                           if(! (key in asgroups)) asgroups[key]=[];
+                           asgroups[key].push(items[i]);
+                          }
+                          retdata['asgroups_name']                      = "asgroups_"+items_to_load_key;
+                          retdata["asgroups_"+items_to_load_key]        = asgroups;
                          }
                          //
                          retdata['model_name']                      = 'model_'       +items_to_load_key;
@@ -511,6 +552,31 @@ function App()
                           retdata[items_to_load_key]                = items.length>0?items[0]:_.clone(info_of_model_to_load.model.empty_object);
                          }
                          //
+                         if(info_of_model_to_load.askey)
+                         {
+                          var askey={};
+                          //  for(var i=0;i<items.length;i++)
+                          //  {
+                          //   askey[items[i]._id]=items[i];
+                          // }
+                          retdata['askey_name']                      = "askey_"+items_to_load_key;
+                          retdata["askey_"+items_to_load_key]        = askey;
+                         }
+                         //
+                         if(info_of_model_to_load.asgroups)
+                         {
+                          var asgroups={},asgroupname=info_of_model_to_load.asgroups;
+                          //for(var i=0;i<items.length;i++)
+                         // {
+                         //  if(! (items[i][asgroupname] in asgroups)) asgroups[items[i][asgroupname]]=[];
+                         //  asgroups[items[i][asgroupname]].push(items[i]);
+                         // }
+                          retdata['asgroups_name']                      = "asgroups_"+items_to_load_key;
+                          retdata["asgroups_"+items_to_load_key]        = asgroups;
+                         }
+                         //
+
+                         //
                          retdata['model_name']                      = 'model_'       +items_to_load_key;
                          retdata['model_'       +items_to_load_key] = info_of_model_to_load.model;
                          //
@@ -521,7 +587,7 @@ function App()
                          //
                    });//subitems2
                  }
-                 else // load select
+                 else if(info_of_model_to_load.load_items || info_of_model_to_load.load_one)// load select
                  {
                    // single load 
                    info_of_model_to_load.model.select(info_of_model_to_load.where,function (cursor)
@@ -551,11 +617,37 @@ function App()
                           retdata[items_to_load_key]                 = items.length>0?items[0]:_.clone(info_of_model_to_load.model.empty_object);
                          }
                          
+                         //
+                         if(info_of_model_to_load.askey)
+                         {
+                          var askey={};
+                          for(var i=0;i<items.length;i++)
+                          {
+                           askey[items[i]._id]=items[i];
+                          }
+                          retdata['askey_name']                      = "askey_"+items_to_load_key;
+                          retdata["askey_"+items_to_load_key]        = askey;
+                         }
+                         //
+                         if(info_of_model_to_load.asgroups)
+                         {
+                          var asgroups={},asgroupname=info_of_model_to_load.asgroups;
+                          for(var i=0;i<items.length;i++)
+                          {
+                           var key=items[i][asgroupname];
+                           if(! (key in asgroups)) asgroups[key]=[];
+                           asgroups[key].push(items[i]);
+                          }
+                          retdata['asgroups_name']                      = "asgroups_"+items_to_load_key;
+                          retdata["asgroups_"+items_to_load_key]        = asgroups;
+                         }
+                         //
+                         
                          retdata['model_name']                      = 'model_'       +items_to_load_key;
                          retdata['model_'       +items_to_load_key] = info_of_model_to_load.model;
                          
                          retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
-                         retdata['sub_cursors_' +items_to_load_key] = loaded_subitems;
+                         retdata['sub_cursors_' +items_to_load_key] = {};//loaded_subitems;
                          //sys.puts("inner retdata3---------------+++++++++++++++++++++++++++++++++");
                          //sys.puts(sys.inspect(retdata,0));
                          //sys.puts(sys.inspect(   items ));
@@ -564,13 +656,57 @@ function App()
                    });//toarray
                    });//select
                  }
+                 else // return empty row /  rows
+                 {
+                         //sys.puts("inner model3---------------+++++++++++++++++++++++++++++++++");
+                         //sys.puts(sys.inspect(info_of_model_to_load,0));
+                         //sys.puts(sys.inspect(info_of_model_to_load))
+                         retdata['error_name']                      = 'error_'       +items_to_load_key;
+                         retdata['error_'      +items_to_load_key]  = null;
+                         
+                         retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
+                         retdata['cursor_'      +items_to_load_key] = [];
+                                              
+                         if(info_of_model_to_load.load_one)
+                         {
+                          retdata['item_name']                       = items_to_load_key;
+                          retdata[items_to_load_key]                 = _.clone(info_of_model_to_load.model.empty_object);
+                         }
+                         
+                         //
+                         if(info_of_model_to_load.askey)
+                         {
+                          var askey={};
+                          retdata['askey_name']                      = "askey_"+items_to_load_key;
+                          retdata["askey_"+items_to_load_key]        = askey;
+                         }
+                         //
+                         if(info_of_model_to_load.asgroups)
+                         {
+                          var asgroups={};
+                          retdata['asgroups_name']                      = "asgroups_"+items_to_load_key;
+                          retdata["asgroups_"+items_to_load_key]        = asgroups;
+                         }
+                         //
+                         
+                         retdata['model_name']                      = 'model_'       +items_to_load_key;
+                         retdata['model_'       +items_to_load_key] = info_of_model_to_load.model;
+                         
+                         retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
+                         retdata['sub_cursors_' +items_to_load_key] = {};
+                         //sys.puts("inner retdata3---------------+++++++++++++++++++++++++++++++++");
+                         //sys.puts(sys.inspect(retdata,0));
+                         //sys.puts(sys.inspect(   items ));
+                         call_count--;  if(call_count==0)     callback();
+                         //
+                 }
                  //fs.readFile(__filename, group_slot);
 
                 }); // next tick
                 })(info_of_model_to_load2,items_to_load_key2);// subfunction
                }; // if has own
               } //for in
-             } // else of empty
+          call_count--;  if(call_count==0)     callback();
        
     };
     
@@ -702,6 +838,49 @@ function App()
     this.basicfields.keyvalue = _.cloneextend(app.basicfields.normal, { edit: { ftype: 'select' }, edittag: { select: { lookup: true }, lookup: { usetable: false}} });
     this.basicfields.file     = _.cloneextend(app.basicfields.normal, { edit: { ftype: 'file' } });
 
+    this.path_exists={};    
+    this.mkdir_cached=function (wantedpath,callback)
+    {
+     if(app.path_exists[wantedpath])callback();
+     app.path.exists(wantedpath,
+     function (wantedpath_exists)
+     {
+      if(!wantedpath_exists)
+      {
+       fs.mkdir(wantedpath, 0777, function (err)
+       {
+        if(err) throw err; 
+        callback();
+       });
+      }
+      else
+      {
+       app.path_exists[wantedpath]=true;
+       callback();
+      }
+     });
+    }
+    
+    this.mkdir=function (wantedpath,callback)
+    {
+     app.path.exists(wantedpath,
+     function (wantedpath_exists)
+     {
+      if(!wantedpath_exists)
+      {
+       fs.mkdir(wantedpath, 0777, function (err)
+       {
+        if(err) throw err; 
+        callback();
+       });
+      }
+      else
+      {
+       callback();
+      }
+     });
+    }
+           
     
     this.basicmodel=
     {
@@ -778,66 +957,108 @@ function App()
 
      save: function( data , callback)
      {
-    	 this.preprocess_document(data , data._id!=null);
-    	 this.collection.save(data ,function(err , result){
+      var that=this;
+    	this.preprocess_document(data , data._id!=null,function (data2){
+     	  that.collection.save(data2 ,function(err , result){
     		 callback(result);
-    	 });
+    	  });       
+      });
+
      },   
 
-     insert: function( data2 ,callback )
+     insert: function( data ,callback )
      {
-      this.preprocess_document(data2 , true);
-      this.collection.insert(data2,function (err,doc){ 
-       if(err) throw err;
-       //sys.puts('sucsess');
-       //sys.puts(JSON.stringify(doc) );
-       if(callback) callback(doc);
+      var that=this;
+      this.preprocess_document(data , true,function (data2)
+      {
+       that.collection.insert(data2,function (err,doc)
+       {
+        //console.log("removed:"+sys.inspect(doc));
+        if(err) throw err;
+        //sys.puts('sucsess');
+        //sys.puts(JSON.stringify(doc) );
+        if(callback) callback(doc);
+       });
       });
      },
      
      remove: function( where, callback )
      {
       // delete files here
-      this.collection.remove( where, function (err,doc){ 
+      this.collection.remove( where, function (err,data)
+      {
+       console.log("removed:"+sys.inspect(data));
        if(err) throw err;
+       //var callback_count=0;
+       // callback_count++;
+ 
+       var model = this;
+       console.log("doc in delete:"+sys.inspect(data));
+       for(var x in model.fields)
+       {
+        if( model.fields.hasOwnProperty( x))
+        {
+         var field = model.fields[x];
+         //console.log(sys.inspect(field.edit));
+         //console.log(sys.inspect(field.general.title));
+         //console.log(sys.inspect(data.x));
+         if(field.edit.ftype==='file') // delete files
+         {
+          if (x in data )
+          {
+           if('path' in data[x] && data[x].path!='')
+           {
+            var filetodelete=app.files_path+data[x].path;
+              //delete data[x];
+            //callback_count++;
+            path.exists(filetodelete,function(exists)
+            {
+             fs.unlink(filetodelete, function (){
+              // callback_count--;
+              // if(callback_count==0)
+              //  callback(data);
+             });
+            });
+           }
+          }//if x in data
+         }//end of: if ( field.edit.ftype==='file' ) //
+        }//if has own
+       }//for fileds
+       
+       //callback_count--;
+       //if(callback_count==0)
+       // callback(data);
+       
        //sys.puts('sucsess');
        //sys.puts(JSON.stringify(doc) );
       });
       if(callback) callback();
      },
      
-     update: function( where, data2 ,callback )
+     update: function( where, data ,callback )
      {
-      this.preprocess_document(data2 , false);
-      //sys.puts(sys.inspect([where,data2]));
-      this.collection.update(where,data2,function (err,doc){ 
-       if(err) throw err;
-       //sys.puts('sucsess');
-       //sys.puts(JSON.stringify(doc) );
-       if(callback) callback(doc);
+      var that=this;
+      this.preprocess_document(data , false,function (data2)
+      {
+       //sys.puts(sys.inspect([where,data]));
+       that.collection.update(where,data2,function (err,doc)
+       {
+        if(err) throw err;
+        //sys.puts('sucsess');
+        //sys.puts(JSON.stringify(doc) );
+        if(callback) callback(doc);
+       });
       });
- 
      },
-     /*
-     multiupdate: function( where )
+ /*  multiupdate: function( where ) { },
+     report:      function( where ) { },
+     search:      function( where ) { },
+     onview:      function( where ) { },   */
+     preprocess_document: function(data , add, callback)
      {
+      var callback_count=0;
+      callback_count++;
       
-     },
-     report: function( where )
-     {
-      
-     },
-     search: function( where )
-     {
-      
-     },
-     onview: function( where )
-     {
-      
-     },
-     */
-     preprocess_document: function(data , add)
-     {
       var model = this;
       //console.log(sys.inspect(data));
       
@@ -882,22 +1103,107 @@ function App()
 
         if(field.edit.ftype==='file')
         {
-         if (x in data && typeof data[x]==='object')
+         if (x in data ) //&& typeof data[x]==='object'
          {
-          console.log(data);
-         
-/*
-          if(data[x]=='')
+          var action;
+          action = 'replace';
+          if('action' in data[x]) { action=data[x]['action']; } // keep strategy
+          if(action == 'keep')
           {
-           delete data[x];   
+           if('value' in data[x]) // keep strategy
+           {
+            //console.log("the value="+data[x]['value']);
+            data[x]=JSON.parse(data[x]['value']);
+           }
           }
-          else        
+          else if(action == 'delete')
           {
-           data[x]=app.ObjectID.createFromHexString(data[x]); 
+           if((x in data) && ('value' in data[x]))// delete file
+           {
+            var value=false;
+            try{value==JSON.parse(data[x]['value']);} catch (e) {console.log(e.stack);}
+            if(value!==false)
+            data[x]=value;
+            if('path' in data[x] && data[x].path!='')
+            {
+             var filetodelete=app.files_path+data[x].path;
+             delete data[x];
+             callback_count++;
+             path.exists(filetodelete,function(exists)
+             {
+              fs.unlink(filetodelete, function (){
+                callback_count--;
+                if(callback_count==0)
+                 callback(data);
+              });
+             });
+            }
+           }// end delete file
           }
-*/
-         }
-        }
+          else if(action == 'replace')
+          {
+           callback_count++;
+          
+           if((x in data) && ('value' in data[x]))// delete file
+           {
+            var value=false;
+            try{value=JSON.parse(data[x]['value']);} catch (e) {console.log(e.stack);}            
+            if( value!==false && ('path' in value) && value.path!='')
+            {
+             var filetodelete=app.files_path+value.path;
+             //delete data[x];
+             callback_count++;
+             path.exists(filetodelete,function(exists)
+             {
+              //console.log("file raplace - delete : \r\n"+filetodelete+"\r\n"+sys.inspect(value));
+              fs.unlink(filetodelete, function (){
+                callback_count--;
+                if(callback_count==0)
+                 callback(data);
+              });
+             });
+            }
+           }// end delete file
+           
+           //console.log("file raplace: \r\n"+sys.inspect(data)); // instead of value i need to load all data from database.
+           var filepath = data[x]['upload']['path'];
+           //console.log(sys.inspect(data[x]));
+           filepath_basename=filepath.substring(filepath.lastIndexOf('/')+1,filepath.length);
+           
+           var newpath1=app.files_path+model.modelname;
+           var newpath2=app.files_path+model.modelname+'/'+x;
+           
+           var newpath =app.files_path+model.modelname+'/'+x+'/'+filepath_basename;
+           var dbpath =model.modelname+'/'+x+'/'+filepath_basename;
+           
+           //create folders
+           //move file
+           //update data
+           data[x]=
+           {
+            mime:data[x]['upload']['mime'],
+            filename:data[x]['upload']['filename'],
+            path:dbpath
+            /*,meta:data[x]['file']['meta']*/
+           };
+           
+
+           app.mkdir_cached(newpath1, function ()
+           {
+            app.mkdir_cached(newpath2, function ()
+            {
+             fs.rename(filepath, newpath, function (err)
+             {
+              if(err)throw err;
+              callback_count--;
+              if(callback_count==0)
+               callback(data);
+             });
+            });
+           });
+          }//if replace
+         }//if x in data
+        }//end of: if ( field.edit.ftype==='file' ) //
         
         if(field.general.ftype==='date')
         {
@@ -921,11 +1227,13 @@ function App()
         }
        }//if
       }//for
-      return data;
+      callback_count--;
+      if(callback_count==0)
+       callback(data);
      },
      select: function(where , callback ) // skip(4).limit(8);
      {
-      //http://www.slideshare.net/kbanker/mongodb-schema-design-mongony
+    //http://www.slideshare.net/kbanker/mongodb-schema-design-mongony
      
 	  // http://www.mongodb.org/display/DOCS/Querying
 	  // http://www.mongodb.org/display/DOCS/Queries+and+Cursors
@@ -982,6 +1290,22 @@ function App()
       });
      }
      ,
+     getallaskey: function(where , callback)
+     {
+      this.select(where,function (cursor)
+      {
+       cursor.toArray(function(err, items)
+       {
+        var askey={};
+        for(var i=0;i<items.length;i++)
+        {
+         askey[items[i]._id]=items[i];
+        }
+        callback(askey);
+       });
+      });
+     }
+     ,
      addpages: function (callback)
      {
       var p,tempalte_name,template_function;
@@ -992,7 +1316,6 @@ function App()
        page.model=this;
        //if(this.modelname=='t1_organization')  console.log(" addpages page "+p);      
        app.load_templates(page);
-
       }
       if(callback)callback(callback);
      },
@@ -1001,7 +1324,7 @@ function App()
       var p;
       // adlater calling route before, route after
       for(p in this.pages)
-      {  
+      {
        var pageurl='/'+this.general.urlprefix+this.pages[p].pageurl;
        
        //app.url_routes.push({path:pageurl,code:function(req,res,page,callback){res.writeHead(200, { 'Content-Type': 'text/plain'});res.write('hello world');res.end();}});
@@ -1067,7 +1390,7 @@ function App()
     if(this.pages.hasOwnProperty(p) )
     {
      var pageurl='/'+this.pages[p].pageurl;
-     var amatch={page:this.pages[p]}
+     var amatch={page:this.pages[p]};
      if(this.pages[p].urlmatch)
      {
       //sys.puts(this.pages[p].urlmatch+"="+pageurl);
@@ -1104,14 +1427,26 @@ function App()
     var page=newmodule.page.apply(oldpage.pagethis?oldpage.pagethis:app,oldpage.pagearguments?oldpage.pagearguments:[app]);
     app.load_templates(page,function ()
     {
-     app.pages[pagename]=page;
-     for(var i=0;i<app.url_routes.length;i++)
+    
+     app.pages[pagename]=page; // update main page reference
+     
+     for(var i=0;i<app.url_routes.length;i++) // serch routes and update routes
      {
       if(app.url_routes[i].page)
       if(app.url_routes[i].page.pagefilename==oldpage.pagefilename)
       {
        app.url_routes[i].page=page;
-       app.url_routes[i].page=page;
+       /*
+       if(oldpage.urlmatch)
+        delete app.url_routes[i][oldpage.urlmatch];
+       else 
+        delete app.url_routes[i]['path'];
+
+       if(page.urlmatch)
+        app.url_routes[i][page.urlmatch]=page.pageurl;
+       else
+        app.url_routes[i]['path']=page.pageurl;
+        */
        console.log( (new Date).toTimeString() + ' page ' + i + ' reloaded ' + filename );
       }
      }

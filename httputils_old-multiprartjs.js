@@ -2,7 +2,7 @@
 
 var querystring = require('querystring');
 var sys = require('sys');
-var formidable  = require("deps/node-formidable");
+var multipart = require("deps/multipart-js/lib/multipart");
 var fs = require('fs');
 var _ = require('deps/nodejs-clone-extend/merger');
 this.temp=__dirname+'/temp/';
@@ -29,6 +29,23 @@ this.postdecoders =
  'application/json': JSON.parse,
 };
 
+var mylog='';
+function upload_files(request, response, folder, callback) 
+{
+  request.setEncoding('binary');
+  // request.setEncoding('binary'); // do not set encoding to binary it needs it as buffer
+  // the StringDecoder is initilized lazyly to Stream._decoder and if it is existes it decodes strings to String from Buffer.
+  // i need buffer so it is bad to set encoding.
+  // 
+  // console.log(sys.inspect(request)); // see the request stream.
+  //
+  //if i will whish to sue decoder it goes like this:
+  //
+  //var StringDecoder = require("string_decoder").StringDecoder; // lazy load
+  //this._decoder = new StringDecoder(encoding);
+  //var string = self._decoder.write(pool.slice(start, end));
+  //if (string.length) self.emit('data', string);
+  
 
   // matches .xxxxx or [xxxxx] or ['xxxxx'] or ["xxxxx"] with optional [] at the end
   var chunks = /(?:(?:^|\.)([^\[\(\.]+)(?=\[|\.|$|\()|\[([^"'][^\]]*?)\]|\["([^\]"]*?)"\]|\['([^\]']*?)'\])(\[\])?/g;
@@ -72,48 +89,83 @@ this.postdecoders =
     return obj;
   };
   
+
+  var parser = multipart.parser();
+  parser.headers = request.headers;
   
-var mylog='';
-function upload_files(req, res, folder, callback) 
-{
-  //console.log("before post received:");
-  //console.log(sys.inspect(req));
-  var form = new formidable.IncomingForm();
-  form.keepExtensions=true;
-  form.uploadDir=folder;
-  form.parse(req, function(err, fields, files) {
-      //req.post=_.clone();
-      //console.log(sys.inspect(req.post));
-      
-      req.post={};
-      for(var p in fields)
+  var request_vars=[];
+  var name, savename, filename, text, file;
+  var inquee=0,finished=false;  
+  if(folder.charAt(folder.length-1)!='/') folder+='/';
+   
+  parser.addListener('onPartBegin', function(part)
+  {
+    inquee++;
+    name = part.name;
+    //console.log('begin name '+ name)
+    if(!part.filename)
+    {
+     text="";
+     file=false;
+     inquee--;
+     if(finished&&inquee==0)
+     {
+      callback(null,request_vars); // if file writing goes beyond parsing, call callback it later when done.
+     }
+    }
+    else
+    {
+      var exten = part.filename.substring( part.filename.lastIndexOf(".") , part.filename.length ).toLowerCase();
+     
+      var randomname='upload_'+uniquerandom()+exten;
+      savename=folder+randomname;
+      file = fs.createWriteStream(savename,{ 'flags': 'w', 'encoding': 'binary', 'mode': 0666 });
+      file.addListener('close', function(part)
       {
-       if(fields.hasOwnProperty(p))
+       inquee--;
+       if(finished&&inquee==0)
        {
-        add_to_object_by_name(req.post,p,fields[p]);
+        callback(null,request_vars); // if file writing goes beyond parsing, call callback it later when done.
        }
-      }
-      for(var p in files)
-      {
-       if(files.hasOwnProperty(p))
-       {
-        add_to_object_by_name(req.post,p,files[p]);
-       }
-      }
-      callback(null,req.post);      
-      delete form;
+      });
+    }
+    // instead onData and onPartEnd, a pump should be set up here
+    // like: sys.pump(part, file, function()  { sys.debug('file pump end');  });
   });
-  //var randomname='upload_'+uniquerandom()+exten;
-  //savename=folder+randomname;
-  //{filename:part.filename,path:savename,mime:part.headers['content-type']};
+  
+  /*
+  function(part)
+  {
+     inquee--;
+     if(finished&&inquee==0)
+      callback(null,request_vars); // if file writing goes beyond parsing, call callback it later when done.
+  }
+  */
+  parser.addListener('onData', function(chunk) { if(file) file.write(chunk); else  text+=chunk;  });
+  parser.addListener('onPartEnd', function(part)
+  {
+   //console.log(sys.inspect(part.headers['content-type']));
+   //console.log(sys.inspect(part.headers['content-disposition']));
+   if(file)
+   {
+    add_to_object_by_name(request_vars,part.name,{filename:part.filename,path:savename,mime:part.headers['content-type']});
+    file.end();
+   }
+   else
+   {
+    add_to_object_by_name(request_vars,part.name,decodeURIComponent( escape( text ) ));
+   }
+  });
+  parser.addListener('onEnd', function(part)   {  finished=true;  if(inquee==0) {callback(null,request_vars);} }); 
+  parser.addListener('onError', function(err) {  console.log(' parser on end  '); callback(err,request_vars); });
+  sys.pump(request, parser, function()  { console.log('request end');  });
 }
 
 
 this.post=function (req, res, callback )
-{//console.log(sys.inspect(req.post));
+{
  //console.log("post received:");
  //console.log(sys.inspect(req.post));
- 
  callback(req.post);
 }
 

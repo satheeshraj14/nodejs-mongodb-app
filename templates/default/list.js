@@ -65,7 +65,7 @@ this.page=function(app,model)
            function ()
            {
              var header= { 'Content-Type': 'text/html'};
-             app.httputils.session_start(req,header);             
+             //app.httputils.session_start(req,header);             
              res.writeHead(200, header);
              //res.write(sys.inspect(   data1 ));        
              res.write( page.list.call(page,data1) );

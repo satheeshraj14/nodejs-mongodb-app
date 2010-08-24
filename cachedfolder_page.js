@@ -315,7 +315,7 @@ this.page=function(app,url,dirpath,reg_include,reg_exclude,hotreload,debugit)
            var ext=relateive.substring(relateive.lastIndexOf('.')+1,relateive.length);
            var contenttype=contentTypes[ext] || 'application/octet-stream';
            var charset=charsets[contenttype]?charsets[contenttype]:false;
-           //if(debugit) sys.puts('cache folder: loading '+relateive);
+           //sys.puts('cache folder: loading '+relateive);
            page.files[relateive] = [
              contenttype+(charset?'; charset=' + charset:''), //0
              data.length, //1

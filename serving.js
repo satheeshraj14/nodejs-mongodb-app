@@ -6,11 +6,7 @@ var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //lo
 //var doubletemplate=te.doubletemplate; // export double template function to global
 var fs = require('fs');    // allaws to open files
 var app=require('app_skeleton').app; // include  basic definision of a model and a filed in a model
-
-process.on('uncaughtException', function (err) {
-  console.log('Caught exception: ' + err.stack);
-});
-
+var app_loaded=false;
 //var milliseconds = require('deps/node-microseconds/lib/node-microseconds').milliseconds;
 console.log("start require modules");
 if(process.argv[3])
@@ -38,6 +34,63 @@ console.log("start app.models[i].setupfirst");
 console.log("start app.models[i].setup");
      for(var i in app.models) app.models[i].setup(app);
     // end install modules and setup models
+
+     
+
+     
+var cookie = {
+	req:null,
+	get:function() { 
+	 var req = this.req;
+	 return (req.headers.cookie ? this.parse(req.headers.cookie) : {});
+	},
+	parse:function(str)	{
+	    var obj = {},
+	        pairs = str.split(/[;,] */);
+	    for (var i = 0, len = pairs.length; i < len; ++i) {
+	        var pair = pairs[i],
+	            eqlIndex = pair.indexOf('='),
+	            key = pair.substr(0, eqlIndex).trim().toLowerCase(),
+	            val = pair.substr(++eqlIndex, pair.length).trim();
+	        // Quoted values
+	        if (val[0] === '"') {
+	            val = val.slice(1, -1);
+	        }
+	        // Only assign once
+	        if (obj[key] === undefined) {
+	            //obj[key] = querystring.unescape(val, true);
+	        	obj[key] = val;
+	        }
+	    }
+	    return obj;
+	}
+};
+
+
+function getuser(callback){
+	var req = this;
+	data = req.cookie.get();
+	if (data.user_id){
+		data.user_id = app.ObjectID.createFromHexString(data.user_id);
+		app.models.t2_users.getall({_id:data.user_id} , function(result){ 
+			if (result.length>0){
+				req.user = result[0];
+				callback(req.user);
+			} else {
+				callback(false);
+			}
+			
+		})
+	} else {
+		callback(false);
+	}
+}
+
+function redirect(res, url, callback, code ) {
+ res.writeHead( code || 302, {'Location': url } );
+ res.end();
+ if(callback)callback();
+};
 
 console.log("starting extend application");
 app = _.extend(app,{
@@ -148,6 +201,7 @@ app = _.extend(app,{
     {
      app.httputils.realpost(req,res,function (querydata)
      {
+      //req.post=querydata;
       app.serveRequest(req,res);
      });
     }
@@ -157,16 +211,42 @@ app = _.extend(app,{
     }
    }
   },
-  
-  serveRequest: function(req, res, newi)
+  extendrequest: function(req)
   {
+   req.cookie = cookie;
+   req.cookie.req = req;
+   req.user = null;
+   req.getuser = getuser;
+   req.redirect = redirect;
+   /*
+   
+   req.sessions={}
+   req.sessions.req=req;
+   req.sessions.save=session.save;
+   */
+  }
+  ,
+  serveRequest: function(req, res, newi) // rename to route
+  {
+   this.extendrequest(req);
+
+   app.httputils.get_user(req);
+   if(!app_loaded)
+   {
+    process.on('uncaughtException', function (err) { 
+      console.log('Caught exception: ' + err.stack);
+    });
+    app_loaded=true;
+   }
+
    try
    {
     if (!req.parsedurl)
     {
      req.parsedurl=url.parse(req.url,true);
+     if(!req.parsedurl.pathname) req.parsedurl={pathname:'error_in_url'};
      if(!req.parsedurl.query)req.parsedurl.query={};
-     req.parsedurl.pathname=decodeURIComponent(req.parsedurl.pathname.replace(/\+/g, '%20'));
+     if(req.parsedurl && req.parsedurl.pathname)req.parsedurl.pathname=decodeURIComponent(req.parsedurl.pathname.replace(/\+/g, '%20'));
      //req.times=[];
      //req.times_start=milliseconds();
      //req.times.push(milliseconds()-req.times_start);

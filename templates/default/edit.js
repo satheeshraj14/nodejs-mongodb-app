@@ -49,9 +49,11 @@ this.page=function(app,model)
         {
          app.httputils.post(req,res,function (data)
          {
+          // console.log(data);         
           var updateok=false;
           if(data)
           {
+          
            if(data['model_edit'])
            {
             if(data['model_edit']._id)
@@ -63,17 +65,17 @@ this.page=function(app,model)
   
              page.model.update(where,data['model_edit'],function (where ,datawithkey)
              { 
-              updateo=true; 
+              //updateok=true; 
               app.httputils.redirect(req,res,'/'+page.model.general.urlprefix+page.model.pages.list.pageurl);
              });
-             
+             /*
              if(!updateok)
              {
               res.writeHead(200, { 'Content-Type': 'text/html'});        
               data1={'page':page,'app':app, 'req':req, 'content': sys.inspect(data) };
               res.write(      page.content.call(page,data1)        );
               res.end();
-             }
+             }*/
              return;
             }
            }
