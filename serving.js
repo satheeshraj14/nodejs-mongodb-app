@@ -6,7 +6,7 @@ var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //lo
 //var doubletemplate=te.doubletemplate; // export double template function to global
 var fs = require('fs');    // allaws to open files
 var app=require('app_skeleton').app; // include  basic definision of a model and a filed in a model
-
+var app_loaded=false;
 //var milliseconds = require('deps/node-microseconds/lib/node-microseconds').milliseconds;
 console.log("start require modules");
 if(process.argv[3])
@@ -34,6 +34,63 @@ console.log("start app.models[i].setupfirst");
 console.log("start app.models[i].setup");
      for(var i in app.models) app.models[i].setup(app);
     // end install modules and setup models
+
+     
+
+     
+var cookie = {
+	req:null,
+	get:function() { 
+	 var req = this.req;
+	 return (req.headers.cookie ? this.parse(req.headers.cookie) : {});
+	},
+	parse:function(str)	{
+	    var obj = {},
+	        pairs = str.split(/[;,] */);
+	    for (var i = 0, len = pairs.length; i < len; ++i) {
+	        var pair = pairs[i],
+	            eqlIndex = pair.indexOf('='),
+	            key = pair.substr(0, eqlIndex).trim().toLowerCase(),
+	            val = pair.substr(++eqlIndex, pair.length).trim();
+	        // Quoted values
+	        if (val[0] === '"') {
+	            val = val.slice(1, -1);
+	        }
+	        // Only assign once
+	        if (obj[key] === undefined) {
+	            //obj[key] = querystring.unescape(val, true);
+	        	obj[key] = val;
+	        }
+	    }
+	    return obj;
+	}
+};
+
+
+function getuser(callback){
+	var req = this;
+	data = req.cookie.get();
+	if (data.user_id){
+		data.user_id = app.ObjectID.createFromHexString(data.user_id);
+		app.models.t2_users.getall({_id:data.user_id} , function(result){ 
+			if (result.length>0){
+				req.user = result[0];
+				callback(req.user);
+			} else {
+				callback(false);
+			}
+			
+		})
+	} else {
+		callback(false);
+	}
+}
+
+function redirect(res, url, callback, code ) {
+ res.writeHead( code || 302, {'Location': url } );
+ res.end();
+ if(callback)callback();
+};
 
 console.log("starting extend application");
 app = _.extend(app,{
@@ -140,18 +197,56 @@ app = _.extend(app,{
   {
    return function (req,res)
    {
-    //app.models.mainpage.add({test:'shimon'});
-    app.serveRequest(req,res);
+    if (req.method==='POST')
+    {
+     app.httputils.realpost(req,res,function (querydata)
+     {
+      //req.post=querydata;
+      app.serveRequest(req,res);
+     });
+    }
+    else
+    {
+     app.serveRequest(req,res);    
+    }
    }
   },
-  
-  serveRequest: function(req, res, newi)
+  extendrequest: function(req)
   {
+   req.cookie = cookie;
+   req.cookie.req = req;
+   req.user = null;
+   req.getuser = getuser;
+   req.redirect = redirect;
+   /*
+   
+   req.sessions={}
+   req.sessions.req=req;
+   req.sessions.save=session.save;
+   */
+  }
+  ,
+  serveRequest: function(req, res, newi) // rename to route
+  {
+   this.extendrequest(req);
+
+   app.httputils.get_user(req);
+   if(!app_loaded)
+   {
+    process.on('uncaughtException', function (err) { 
+      console.log('Caught exception: ' + err.stack);
+    });
+    app_loaded=true;
+   }
+
+   try
+   {
     if (!req.parsedurl)
     {
      req.parsedurl=url.parse(req.url,true);
+     if(!req.parsedurl.pathname) req.parsedurl={pathname:'error_in_url'};
      if(!req.parsedurl.query)req.parsedurl.query={};
-     req.parsedurl.pathname=decodeURIComponent(req.parsedurl.pathname.replace(/\+/g, '%20'));
+     if(req.parsedurl && req.parsedurl.pathname)req.parsedurl.pathname=decodeURIComponent(req.parsedurl.pathname.replace(/\+/g, '%20'));
      //req.times=[];
      //req.times_start=milliseconds();
      //req.times.push(milliseconds()-req.times_start);
@@ -194,6 +289,17 @@ app = _.extend(app,{
       }
       if(typeof app.url_routes[i].page!='undefined')
       {
+        /*
+        //var req2=req,res2=res;
+        setTimeout(function(){
+        app.httputils.post(req,res,function (querydata){
+              console.log("success"); 
+              res.writeHead(200, { 'Content-Type': 'text/html'});
+              res.write(sys.inspect(querydata));
+              res.end();
+        });},530);
+ return true;*/
+ 
        if(app.url_routes[i].page.main( req, res, app.url_routes[i].page, i ))
        {
         return true; // true means break the preview function
@@ -215,12 +321,22 @@ app = _.extend(app,{
     
     if(!urlmatch)
     {
-     sys.puts("not found: "+myurl.pathname);
+     sys.puts("not found: "+req.parsedurl.pathname);
      //app.urls[0][1][app.urls[0][2]](req, res);
      res.writeHead(202, { 'Content-Type': 'text/html'});
-     res.write("<html><head><title>Unhandeld request</title></head><body>hendle request (req, res) \r\n did not match any url: \r\n "+myurl.pathname+" \r\n<br\ > <a href='/'>click here</a> to go to the main page</body></html>");
+     res.write("<html><head><title>Unhandeld request</title></head><body>hendle request (req, res) \r\n did not match any url: \r\n "+req.parsedurl.pathname+" \r\n<br\ > <a href='/'>click here</a> to go to the main page</body></html>");
      res.end();
     }
+    }
+    catch(error)
+    {
+     sys.puts("error: "+req.parsedurl.pathname);
+     //app.urls[0][1][app.urls[0][2]](req, res);
+     res.writeHead(202, { 'Content-Type': 'text/html'});
+     res.write("<html><head><title>Server Error</title></head><body>Server Error in Handle Request (url: "+req.parsedurl.pathname+"): \r\n  <pre>"+error.stack+"</pre> \r\n<br\ > <a href='/'>click here</a> to go to the main page</body></html>");
+     res.end();
+    }
+    
     //this.writePixel(res);
 
     //var env = this.splitQuery(req.url.split('?')[1]);

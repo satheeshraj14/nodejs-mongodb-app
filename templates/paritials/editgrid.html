@@ -3,7 +3,7 @@
 var row=<%=cursor_name%>[0];
 var value,field;
 ?>
-<form action="/<%=model.general.urlprefix+page.pageurl%>" method="post">
+<form action="/<%=model.general.urlprefix+page.pageurl%>" method="post" enctype="multipart/form-data">
 <input type="hidden" name="<%=model_name%>[_id]" value="<?=row['_id'].toHexString()?>">
 <table border=1>
 <%

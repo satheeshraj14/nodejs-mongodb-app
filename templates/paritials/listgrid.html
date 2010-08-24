@@ -31,7 +31,30 @@ for(fieldname in model.fields)
  //if(field.list.use){
  %><td><?
   if(row[<%=JSON.stringify(fieldname) %>])
-   echo +=this.htmlencode(row[<%=JSON.stringify(fieldname) %>]<% if(fieldname=='_id') echo+='.toHexString()'%>);
+  {
+   // here should go iknput templates, the folowing is a quick hack:
+   <%
+   if(fieldname=='_id')
+   {
+    %>
+    echo +=this.htmlencode(row[<%=JSON.stringify(fieldname) %>].toHexString());
+    <%
+   }
+   else
+   {
+    %>
+    if(row[<%=JSON.stringify(fieldname) %>].filename)
+     echo +=this.htmlencode(row[<%=JSON.stringify(fieldname) %>].filename);
+    else if(row[<%=JSON.stringify(fieldname) %>].id&&row[<%=JSON.stringify(fieldname) %>].toHexString)
+     echo +=this.htmlencode(row[<%=JSON.stringify(fieldname) %>].toHexString());
+    else if(typeof row[<%=JSON.stringify(fieldname) %>]==='object')
+     echo +=this.htmlencode(app.sys.inspect(row[<%=JSON.stringify(fieldname) %>]));
+    else
+     echo +=this.htmlencode(row[<%=JSON.stringify(fieldname) %>]);
+    <%
+   }
+   %>
+  }
   else
    echo +="&nbsp;";
  ?></td><% 

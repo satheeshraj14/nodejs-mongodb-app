@@ -53,7 +53,7 @@ this.page=function(app,model)
         if(req.method==='POST')
          app.httputils.post(req,res,function (data)
          {
-          page.model.add(data['model_add'],function (datawithkey)
+          page.model.insert(data['model_add'],function (datawithkey)
           {
            app.httputils.redirect(req,res,'/'+page.model.general.urlprefix+page.model.pages.list.pageurl);
            //res.writeHead(200, { 'Content-Type': 'text/html'});        
@@ -67,7 +67,9 @@ this.page=function(app,model)
           var data1={'page':page, 'app':app, 'req':req, }         
           app.load_data(
            {
-            'add': {  model:page.model                 , column_set:'edit'  , where:null            , load_items:true,  load_subitems:true    },
+
+            'add': {  model:page.model                 , column_set:'edit'  , where:null            , load_items:false,  load_subitems:true    },
+
            }
           ,
            data1
@@ -75,7 +77,7 @@ this.page=function(app,model)
            function ()
            {
              var header= { 'Content-Type': 'text/html'};
-             app.httputils.session_start(req,header);             
+             //app.httputils.session_start(req,header);             
              res.writeHead(200, header);
              //res.write(sys.inspect(   data1 ));        
              page.add.call(page, data1 ,function (echo){

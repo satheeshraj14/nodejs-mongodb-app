@@ -1,12 +1,15 @@
 var _ = require('deps/nodejs-clone-extend/merger');  //  lets do: _.extend(same,otherobjexts),  _.clone(obj) - creates new reference, see source to understand // 
 var sys = require('sys');
- var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //load double teplate module
+var path = require('path');
+var fs = require('fs');
+
+var doubletemplate = require('deps/nodejs-meta-templates/doubletemplate');  //load double teplate module
 var httputils = require('httputils');
 var ObjectID= require('deps/node-mongodb-native/lib/mongodb/bson/bson').ObjectID;
 var step=require('deps/step/lib/step');
+var phpjs = require('phpjs'); // http://phpjs.org/packages/view/2693/name:806d77a73ce93d851a4620f4a788acd7
 
-var autoreload= require('deps/node-hot-reload');
-autoreload.path=__dirname;
+var autoreload= require('deps/node-hot-reload');autoreload.path=__dirname;
 
 /*
 
@@ -33,11 +36,16 @@ autoreload.path=__dirname;
 function App()
 {
     this.autoreload=autoreload;
-	this._=_;
+	  this._=_;
+	  this.phpjs=phpjs;
+	  this.path=path;
+	  this.fs=fs;
     var app=this;
     this.server={port:8000};
     this.websocket={port:8000};
     this.templates_path=__dirname+'/templates/';
+    this.files_path=__dirname+'/files/';
+    this.root_path=__dirname;
     this.doubletemplate=doubletemplate;
     this.httputils=httputils;
     this.ObjectID=ObjectID;
@@ -54,7 +62,8 @@ function App()
 
     this.menus={}; 
     this.collections={};
-    
+
+
     this.templates= // master templates
     {
      pagefilename:__filename,
@@ -266,13 +275,13 @@ function App()
     }
     
     this.load_app_templates=function (callback)
-     {
-      this.load_templates1(this.templates);
-      this.load_templates1(this.editfields);
-      this.load_templates1(this.viewfields);      
-      if(callback)callback(callback);
-     };
-    
+    {
+     this.load_templates1(this.templates);
+     this.load_templates1(this.editfields);
+     this.load_templates1(this.viewfields);      
+     if(callback)callback(callback);
+    };
+   
 
     this.defaultvalidation=function ()
     {
@@ -338,11 +347,11 @@ function App()
        {
         //sys.puts(operations_type);
         //sys.puts(sys.inspect(field));
-        havelookup=field.edittag[ field[operations_type].ftype  ].lookup?true:false;
-        if(havelookup)
-        {
-         lookupinfo=field.edittag.lookup;
-        }
+         havelookup=field.edittag[ field[operations_type].ftype  ].lookup?true:false;
+         if(havelookup)
+         {
+          lookupinfo=field.edittag.lookup;
+         }
        }
         
        if(havelookup)
@@ -366,160 +375,338 @@ function App()
 
     this.fake_load_data= function(items_to_load,retdata,callback)
     {
-             var call_count=0;
-             if(!items_to_load)
-             {
-              retdata={};
-              callback();  // don't create group_slots if the array is empty otherwise it will not go to the next step
-             }
-             else
-             {
+             var call_count=1;
+
               for(var items_to_load_key2 in items_to_load)
               {
                if(items_to_load.hasOwnProperty(items_to_load_key2))
                {
-                var model_to_load2=items_to_load[items_to_load_key2];
+                var info_of_model_to_load2=items_to_load[items_to_load_key2];
                 call_count++;
-                (function(model_to_load,items_to_load_key) {
-                process.nextTick(
-                function () {
-                 var loaded_subitems={},items={};
-
-                     //sys.puts(sys.inspect(model_to_load))
-                     retdata['error_name']                      = 'error_'       +items_to_load_key;
-                     retdata['error_'      +items_to_load_key]   = null;
-                     
-                     retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
-                     retdata['cursor_'      +items_to_load_key]  = items;
-                     
-                     retdata['model_name']                      = 'model_'       +items_to_load_key;
-                     retdata['model_'       +items_to_load_key]  = model_to_load.model;
-                     
-                     retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
-                     retdata['sub_cursors_' +items_to_load_key]  = loaded_subitems;
-                     //sys.puts(sys.inspect(   items ));
-                     call_count--;  if(call_count==0)     callback();
-                  
-                 
-                 //fs.readFile(__filename, group_slot);
-
+                (function(info_of_model_to_load,items_to_load_key) {
+                process.nextTick(function ()
+                {
+                      var loaded_subitems={},items={};
+                      //
+                      retdata['item_name']                     = items_to_load_key;
+                      retdata[items_to_load_key]              = _.clone(info_of_model_to_load.empty_object);
+                      //
+                      //sys.puts(sys.inspect(info_of_model_to_load))
+                      retdata['error_name']                      = 'error_'       +items_to_load_key;
+                      retdata['error_'      +items_to_load_key]   = null;
+                      //
+                      retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
+                      retdata['cursor_'      +items_to_load_key]  = items;
+                      //
+                      if(info_of_model_to_load.load_one)
+                      {
+                       retdata['item_name']                      = items_to_load_key;
+                       retdata[items_to_load_key]                = _.clone(info_of_model_to_load.model.empty_object);
+                      }
+                      //
+                      if(info_of_model_to_load.askey)
+                      {
+                       var askey={};
+                       //for(var i=0;i<items.length;i++)
+                       //{
+                       // askey[items[i]._id]=items[i];
+                       //}
+                       retdata['askey_name']                      = "askey_"+items_to_load_key;
+                       retdata["askey_"+items_to_load_key]        = askey;
+                      }
+                      //
+                      retdata['model_name']                       = 'model_'       +items_to_load_key;
+                      retdata['model_'       +items_to_load_key]  = info_of_model_to_load.model;
+                      //
+                      retdata['sub_cursors_name']                 = 'sub_cursors_' +items_to_load_key;
+                      retdata['sub_cursors_' +items_to_load_key]  = loaded_subitems;
+                      //sys.puts(sys.inspect(   items ));
+                      call_count--;  if(call_count==0)     callback();
+                      //fs.readFile(__filename, group_slot);
                 }); // next tick
-                })(model_to_load2,items_to_load_key2);// subfunction
+                })(info_of_model_to_load2,items_to_load_key2);// subfunction
                }; // if has own
               } //for in
-             } // else of empty
-       
+
+             call_count--;  if(call_count==0)     callback();
     };
     
     this.load_data= function(items_to_load,retdata,callback)
     {
-             var call_count=0;
-             if(!items_to_load)
-             {
-              retdata={};
-              callback();  // don't create group_slots if the array is empty otherwise it will not go to the next step
-             }
-             else
-             {
+             var call_count=1;
+
+
               for(var items_to_load_key2 in items_to_load)
               {
                if(items_to_load.hasOwnProperty(items_to_load_key2))
                {
-                var model_to_load2=items_to_load[items_to_load_key2];
+                var info_of_model_to_load2=items_to_load[items_to_load_key2];
                 call_count++;
-                (function(model_to_load,items_to_load_key) {
+                (function(info_of_model_to_load,items_to_load_key) {
                 //sys.puts("top model---------------************************************");
-                //sys.puts(sys.inspect(model_to_load,0));
-                process.nextTick(
-                function () {
-                
-                 var loaded_subitems={},items={};
-                 if(model_to_load.load_subitems && model_to_load.load_items)
-                 { // multi load double
+                //sys.puts(sys.inspect(info_of_model_to_load,0));
+                process.nextTick(function ()
+                {
                  
-                   app.load_subitems( model_to_load.model , model_to_load.column_set , function (loaded_subitems)
-                   {
-                   model_to_load.model.list(model_to_load.where,function (cursor)
-                   {
-                   cursor.toArray(function(err, items)
-                   {
-                     //sys.puts("inner model1---------------+++++++++++++++++++++++++++++++++");
-                     //sys.puts(sys.inspect(model_to_load,0));
-
-                     retdata['error_name']                      = 'error_'       +items_to_load_key;
-                     retdata['error_'      +items_to_load_key]  = err;
-                     
-                     retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
-                     retdata['cursor_'      +items_to_load_key] = items;
-                     
-                     retdata['model_name']                      = 'model_'       +items_to_load_key;
-                     retdata['model_'       +items_to_load_key] = model_to_load.model;
-                     
-                     retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
-                     retdata['sub_cursors_' +items_to_load_key] = loaded_subitems;
-                     
-                     //sys.puts(sys.inspect(   items ));
-                     call_count--;  if(call_count==0)     callback();
-                   });//toarray
-                   });//list
-                   });//subitems2
+                 if(items_to_load_key=='homepage' && info_of_model_to_load.where && ('_id' in info_of_model_to_load.where) && (!info_of_model_to_load.where['_id'])) // have _id but it is null or undefined
+                 {
+                  console.log("load where:--"+require('sys').inspect(info_of_model_to_load.where));
+                  //info_of_model_to_load.load_subitems=false
+                  //info_of_model_to_load.load_items=false;
+                  //info_of_model_to_load.load_one=false;
                  }
-                 else if(model_to_load.load_subitems)
+                 
+                 var loaded_subitems={},items={};
+                 if(info_of_model_to_load.load_subitems && info_of_model_to_load.load_items)
+                 { // multi load double
+                  app.load_subitems( info_of_model_to_load.model , info_of_model_to_load.column_set , function (loaded_subitems)
+                  {
+                  info_of_model_to_load.model.select(info_of_model_to_load.where,function (cursor)
+                  {
+                  cursor.toArray(function(err, items)
+                  {
+                         //sys.puts("inner model1---------------+++++++++++++++++++++++++++++++++");
+                         //sys.puts(sys.inspect(info_of_model_to_load,0));
+                         //
+                         retdata['error_name']                      = 'error_'       +items_to_load_key;
+                         retdata['error_'      +items_to_load_key]  = err;
+                         //
+                         if(info_of_model_to_load.fill_empty)
+                         {
+                          for(var i=0;i<items.length;i++)
+                          {
+                           _.add(items[i],info_of_model_to_load.empty_object);
+                          }
+                         }
+                         //
+                         retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
+                         retdata['cursor_'      +items_to_load_key] = items;
+                         //
+                         if(info_of_model_to_load.load_one)
+                         {
+                          retdata['item_name']                      = items_to_load_key;
+                          retdata[items_to_load_key]                = items.length>0?items[0]:_.clone(info_of_model_to_load.model.empty_object);
+                         }
+                         //
+                         if(info_of_model_to_load.askey)
+                         {
+                          var askey={};
+                          for(var i=0;i<items.length;i++)
+                          {
+                           askey[items[i]._id]=items[i];
+                          }
+                          retdata['askey_name']                      = "askey_"+items_to_load_key;
+                          retdata["askey_"+items_to_load_key]        = askey;
+                         }
+                         //
+                         if(info_of_model_to_load.asgroups)
+                         {
+                          var asgroups={},asgroupname=info_of_model_to_load.asgroups;
+                          for(var i=0;i<items.length;i++)
+                          {
+                           var key=items[i][asgroupname];
+                           if(! (key in asgroups)) asgroups[key]=[];
+                           asgroups[key].push(items[i]);
+                          }
+                          retdata['asgroups_name']                      = "asgroups_"+items_to_load_key;
+                          retdata["asgroups_"+items_to_load_key]        = asgroups;
+                         }
+                         //
+                         retdata['model_name']                      = 'model_'       +items_to_load_key;
+                         retdata['model_'       +items_to_load_key] = info_of_model_to_load.model;
+                         //
+                         retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
+                         retdata['sub_cursors_' +items_to_load_key] = loaded_subitems;
+                         //
+                         //sys.puts(sys.inspect(   items ));
+                         call_count--;  if(call_count==0)     callback();
+                         //
+                  });//toarray
+                  });//select
+                  });//subitems2
+                 }
+                 else if(info_of_model_to_load.load_subitems)
                  { // multi load
-                   app.load_subitems( model_to_load.model , model_to_load.column_set , function (loaded_subitems)
+                   app.load_subitems( info_of_model_to_load.model , info_of_model_to_load.column_set , function (loaded_subitems)
                    {
-                     //sys.puts("inner model2---------------+++++++++++++++++++++++++++++++++");
-                     //sys.puts(sys.inspect(model_to_load,0));
-                     //sys.puts(sys.inspect(model_to_load))
-                     retdata['error_name']                      = 'error_'       +items_to_load_key;
-                     retdata['error_'      +items_to_load_key]  = null;
-                     
-                     retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
-                     retdata['cursor_'      +items_to_load_key] = items;
-                     
-                     retdata['model_name']                      = 'model_'       +items_to_load_key;
-                     retdata['model_'       +items_to_load_key] = model_to_load.model;
-                     
-                     retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
-                     retdata['sub_cursors_' +items_to_load_key] = loaded_subitems;
-                     sys.puts(sys.inspect(   loaded_subitems ));
-                     call_count--;  if(call_count==0)     callback();
+                         //sys.puts("inner model2---------------+++++++++++++++++++++++++++++++++");
+                         //sys.puts(sys.inspect(info_of_model_to_load,0));
+                         //sys.puts(sys.inspect(info_of_model_to_load))
+                         retdata['error_name']                      = 'error_'       +items_to_load_key;
+                         retdata['error_'      +items_to_load_key]  = null;
+                         //
+                         if(info_of_model_to_load.fill_empty)
+                         {
+                          for(var i=0;i<items.length;i++)
+                          {
+                           _.add(items[i],info_of_model_to_load.empty_object);
+                          }
+                         }
+                         //
+                         retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
+                         retdata['cursor_'      +items_to_load_key] = items;
+                         //
+                         if(info_of_model_to_load.load_one)
+                         {
+                          retdata['item_name']                      = items_to_load_key;
+                          retdata[items_to_load_key]                = items.length>0?items[0]:_.clone(info_of_model_to_load.model.empty_object);
+                         }
+                         //
+                         if(info_of_model_to_load.askey)
+                         {
+                          var askey={};
+                          //  for(var i=0;i<items.length;i++)
+                          //  {
+                          //   askey[items[i]._id]=items[i];
+                          // }
+                          retdata['askey_name']                      = "askey_"+items_to_load_key;
+                          retdata["askey_"+items_to_load_key]        = askey;
+                         }
+                         //
+                         if(info_of_model_to_load.asgroups)
+                         {
+                          var asgroups={},asgroupname=info_of_model_to_load.asgroups;
+                          //for(var i=0;i<items.length;i++)
+                         // {
+                         //  if(! (items[i][asgroupname] in asgroups)) asgroups[items[i][asgroupname]]=[];
+                         //  asgroups[items[i][asgroupname]].push(items[i]);
+                         // }
+                          retdata['asgroups_name']                      = "asgroups_"+items_to_load_key;
+                          retdata["asgroups_"+items_to_load_key]        = asgroups;
+                         }
+                         //
+
+                         //
+                         retdata['model_name']                      = 'model_'       +items_to_load_key;
+                         retdata['model_'       +items_to_load_key] = info_of_model_to_load.model;
+                         //
+                         retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
+                         retdata['sub_cursors_' +items_to_load_key] = loaded_subitems;
+                         sys.puts(sys.inspect(   loaded_subitems ));
+                         call_count--;  if(call_count==0)     callback();
+                         //
                    });//subitems2
                  }
-                 else // load list
-                 { // single load 
-                   model_to_load.model.list(model_to_load.where,function (cursor)
+                 else if(info_of_model_to_load.load_items || info_of_model_to_load.load_one)// load select
+                 {
+                   // single load 
+                   info_of_model_to_load.model.select(info_of_model_to_load.where,function (cursor)
                    {
                    cursor.toArray(function(err, items)
                    {
-                     //sys.puts("inner model3---------------+++++++++++++++++++++++++++++++++");
-                     //sys.puts(sys.inspect(model_to_load,0));
-                     //sys.puts(sys.inspect(model_to_load))
-                     retdata['error_name']                      = 'error_'       +items_to_load_key;
-                     retdata['error_'      +items_to_load_key]  = err;
-                     
-                     retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
-                     retdata['cursor_'      +items_to_load_key] = items;
-                     
-                     retdata['model_name']                      = 'model_'       +items_to_load_key;
-                     retdata['model_'       +items_to_load_key] = model_to_load.model;
-                     
-                     retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
-                     retdata['sub_cursors_' +items_to_load_key] = loaded_subitems;
-                     //sys.puts("inner retdata3---------------+++++++++++++++++++++++++++++++++");
-                     //sys.puts(sys.inspect(retdata,0));
-                     //sys.puts(sys.inspect(   items ));
-                     call_count--;  if(call_count==0)     callback();
+                         //sys.puts("inner model3---------------+++++++++++++++++++++++++++++++++");
+                         //sys.puts(sys.inspect(info_of_model_to_load,0));
+                         //sys.puts(sys.inspect(info_of_model_to_load))
+                         retdata['error_name']                      = 'error_'       +items_to_load_key;
+                         retdata['error_'      +items_to_load_key]  = err;
+                         
+                         if(info_of_model_to_load.fill_empty)
+                         {
+                          for(var i=0;i<items.length;i++)
+                          {
+                           _.add(items[i],info_of_model_to_load.empty_object);
+                          }
+                         }
+                         
+                         retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
+                         retdata['cursor_'      +items_to_load_key] = items;
+                                              
+                         if(info_of_model_to_load.load_one)
+                         {
+                          retdata['item_name']                       = items_to_load_key;
+                          retdata[items_to_load_key]                 = items.length>0?items[0]:_.clone(info_of_model_to_load.model.empty_object);
+                         }
+                         
+                         //
+                         if(info_of_model_to_load.askey)
+                         {
+                          var askey={};
+                          for(var i=0;i<items.length;i++)
+                          {
+                           askey[items[i]._id]=items[i];
+                          }
+                          retdata['askey_name']                      = "askey_"+items_to_load_key;
+                          retdata["askey_"+items_to_load_key]        = askey;
+                         }
+                         //
+                         if(info_of_model_to_load.asgroups)
+                         {
+                          var asgroups={},asgroupname=info_of_model_to_load.asgroups;
+                          for(var i=0;i<items.length;i++)
+                          {
+                           var key=items[i][asgroupname];
+                           if(! (key in asgroups)) asgroups[key]=[];
+                           asgroups[key].push(items[i]);
+                          }
+                          retdata['asgroups_name']                      = "asgroups_"+items_to_load_key;
+                          retdata["asgroups_"+items_to_load_key]        = asgroups;
+                         }
+                         //
+                         
+                         retdata['model_name']                      = 'model_'       +items_to_load_key;
+                         retdata['model_'       +items_to_load_key] = info_of_model_to_load.model;
+                         
+                         retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
+                         retdata['sub_cursors_' +items_to_load_key] = {};//loaded_subitems;
+                         //sys.puts("inner retdata3---------------+++++++++++++++++++++++++++++++++");
+                         //sys.puts(sys.inspect(retdata,0));
+                         //sys.puts(sys.inspect(   items ));
+                         call_count--;  if(call_count==0)     callback();
+                         //
                    });//toarray
-                   });//list
+                   });//select
+                 }
+                 else // return empty row /  rows
+                 {
+                         //sys.puts("inner model3---------------+++++++++++++++++++++++++++++++++");
+                         //sys.puts(sys.inspect(info_of_model_to_load,0));
+                         //sys.puts(sys.inspect(info_of_model_to_load))
+                         retdata['error_name']                      = 'error_'       +items_to_load_key;
+                         retdata['error_'      +items_to_load_key]  = null;
+                         
+                         retdata['cursor_name']                     = 'cursor_'      +items_to_load_key;
+                         retdata['cursor_'      +items_to_load_key] = [];
+                                              
+                         if(info_of_model_to_load.load_one)
+                         {
+                          retdata['item_name']                       = items_to_load_key;
+                          retdata[items_to_load_key]                 = _.clone(info_of_model_to_load.model.empty_object);
+                         }
+                         
+                         //
+                         if(info_of_model_to_load.askey)
+                         {
+                          var askey={};
+                          retdata['askey_name']                      = "askey_"+items_to_load_key;
+                          retdata["askey_"+items_to_load_key]        = askey;
+                         }
+                         //
+                         if(info_of_model_to_load.asgroups)
+                         {
+                          var asgroups={};
+                          retdata['asgroups_name']                      = "asgroups_"+items_to_load_key;
+                          retdata["asgroups_"+items_to_load_key]        = asgroups;
+                         }
+                         //
+                         
+                         retdata['model_name']                      = 'model_'       +items_to_load_key;
+                         retdata['model_'       +items_to_load_key] = info_of_model_to_load.model;
+                         
+                         retdata['sub_cursors_name']                = 'sub_cursors_' +items_to_load_key;
+                         retdata['sub_cursors_' +items_to_load_key] = {};
+                         //sys.puts("inner retdata3---------------+++++++++++++++++++++++++++++++++");
+                         //sys.puts(sys.inspect(retdata,0));
+                         //sys.puts(sys.inspect(   items ));
+                         call_count--;  if(call_count==0)     callback();
+                         //
                  }
                  //fs.readFile(__filename, group_slot);
 
                 }); // next tick
-                })(model_to_load2,items_to_load_key2);// subfunction
+                })(info_of_model_to_load2,items_to_load_key2);// subfunction
                }; // if has own
               } //for in
-             } // else of empty
+          call_count--;  if(call_count==0)     callback();
        
     };
     
@@ -543,7 +730,7 @@ function App()
         //sys.puts('select sub items: selections.'+selection.fieldname+'.fieldname = '+selection.fieldname);
         if(!selection.where)selection.where=null;
      
-        selection.submodel.list(selection.where,function (cursor)
+        selection.submodel.select(selection.where,function (cursor)
         {
          try{
 //          sys.puts('ret list' + sys.inspect(cursor));
@@ -597,7 +784,7 @@ function App()
        list:           { use: true, agregate : null, width : null, ftype: 'text' /* text / image */, wrap : true, quicksearch: true, extsearch: false, tempalte:null /* null or custom template function or file name etc */, },
        view:           { use: true, title: null,                   ftype: 'text' /* text / image */, },
        edit:           { use: true, title: null, readonly:false,   ftype: 'text' /* text / date / password / radio / checkbox / select / textarea / html / file / hidden */, },
-       add:            { use: true, defaultvalue: '', },
+       add:            { use: true, /*default_value: '',*/ },
        multiupdate:    { use: true, },
        advancedsearch: { use: true, operator1: 'like', operator2:'like', /*  user select / > / < / >= / <= / between / like / not like / starts with / ends with */ tempalte:null /* null or custom template function orfile name etc */, },
        viewtag:        {
@@ -649,8 +836,51 @@ function App()
     this.basicfields.number   = _.cloneextend(app.basicfields.normal, { edittag: { validation: { validate: false, type: 'number'} }, general: { ftype: 'number'} });
     this.basicfields.lookup   = _.cloneextend(app.basicfields.normal, { edit: { ftype: 'select' }, edittag: { select: { lookup: true }, lookup: { usetable: true}} });
     this.basicfields.keyvalue = _.cloneextend(app.basicfields.normal, { edit: { ftype: 'select' }, edittag: { select: { lookup: true }, lookup: { usetable: false}} });
-    this.basicfields.file   = _.cloneextend(app.basicfields.normal, { edittag: { }, general: { ftype: 'text'} });
+    this.basicfields.file     = _.cloneextend(app.basicfields.normal, { edit: { ftype: 'file' } });
 
+    this.path_exists={};    
+    this.mkdir_cached=function (wantedpath,callback)
+    {
+     if(app.path_exists[wantedpath])callback();
+     app.path.exists(wantedpath,
+     function (wantedpath_exists)
+     {
+      if(!wantedpath_exists)
+      {
+       fs.mkdir(wantedpath, 0777, function (err)
+       {
+        if(err) throw err; 
+        callback();
+       });
+      }
+      else
+      {
+       app.path_exists[wantedpath]=true;
+       callback();
+      }
+     });
+    }
+    
+    this.mkdir=function (wantedpath,callback)
+    {
+     app.path.exists(wantedpath,
+     function (wantedpath_exists)
+     {
+      if(!wantedpath_exists)
+      {
+       fs.mkdir(wantedpath, 0777, function (err)
+       {
+        if(err) throw err; 
+        callback();
+       });
+      }
+      else
+      {
+       callback();
+      }
+     });
+    }
+           
     
     this.basicmodel=
     {
@@ -724,155 +954,287 @@ function App()
      fields:
      {
      },
-     // useful utility functions //////////////
-     add: function( data , callback )
+
+     save: function( data , callback)
      {
       var that=this;
-      that.beforeadd( data , function (){ 
-       that.doadd( data , function (data2){ 
-        that.afteradd( data2 , function (){ 
-         if(callback)callback(data2); } ); } ); } );
-     },
-     
-     del: function( where, callback )
-     {  
-      var that=this;
-      that.beforedel( where , function (){
-       that.dodel( where , function (){
-        that.afterdel( where , function (){
-         if(callback)callback(); } ); } ); } );     
-     },
-     
-     update: function( where ,data ,callback )
+    	this.preprocess_document(data , data._id!=null,function (data2){
+     	  that.collection.save(data2 ,function(err , result){
+    		 callback(result);
+    	  });       
+      });
+
+     },   
+
+     insert: function( data ,callback )
      {
       var that=this;
-      that.beforeupdate( where ,data , function (){ 
-       that.doupdate( where ,data , function (where ,data2){ 
-        that.afterupdate( where ,data2 , function (){ 
-         if(callback)callback(where ,data2); } ); } ); } );
-     },
-     
-     list: function( where , callback)
-     {
-      var that=this;
-      that.beforelist( where , function ()
+      this.preprocess_document(data , true,function (data2)
       {
-       that.dolist( where , function (cursor)
-       {  
-        that.afterlist( where , cursor, function (cursor2)
-        {
-         if(callback){ callback(cursor2); }
-        } );
-       } );
-      } );
-     },
-     multiupdate: function( where )
-     {
-      
-     },
-     report: function( where )
-     {
-      
-     },
-     search: function( where )
-     {
-      
-     },
-     view: function( where )
-     {
-      
-     },
-     save: function( data )
-     {
-      
-     },
-     addpages: function(callback)
-     {
-      var that=this;
-      that.beforeaddpages(  function (){ 
-       that.doaddpages( function (){ 
-        that.afteraddpages( function (){ 
-         if(callback)callback(); } ); } ); } );  
-     },
-     addurls: function(callback)
-     {
-      var that=this;
-      that.beforeaddurls(  function (){ 
-       that.doaddurls( function (){ 
-        that.afteraddurls( function (){ 
-         if(callback)callback(); } ); } ); } );  
-     },
-
-     init: function(callback)
-     {
-      var that=this;
-      that.beforeinit(  function (){ 
-       that.doinit( function (){ 
-        that.afterinit( function (){ 
-         if(callback)callback(); } ); } ); } );  
-     },
-
-     setupfirst: function(callback)
-     {
-      var that=this;
-      that.beforesetupfirst(  function (){ 
-       that.dosetupfirst( function (){ 
-        that.aftersetupfirst( function (){ 
-         if(callback)callback(); } ); } ); } );  
-     },
-     setup: function(callback)
-     {
-      var that=this;
-      that.beforesetup(  function (){ 
-       that.dosetup( function (){ 
-        that.aftersetup( function (){ 
-         if(callback)callback(); } ); } ); } );  
-     },
-     setuplast: function(callback)
-     {
-      var that=this;
-      that.beforesetuplast(  function (){ 
-       that.dosetuplast( function (){ 
-        that.aftersetuplast( function (){ 
-         if(callback)callback(); } ); } ); } );  
-     },
-           
-     // end useful utility functions //////////////
-     // real action functions //////////////
-     doadd: function( data2 ,callback )
-     {
-      this.collection.insert(data2,function (err,doc){ 
-       if(err) throw err;
-       //sys.puts('sucsess');
-       //sys.puts(JSON.stringify(doc) );
-       if(callback) callback(doc);
+       that.collection.insert(data2,function (err,doc)
+       {
+        //console.log("removed:"+sys.inspect(doc));
+        if(err) throw err;
+        //sys.puts('sucsess');
+        //sys.puts(JSON.stringify(doc) );
+        if(callback) callback(doc);
+       });
       });
      },
      
-     dodel: function( where, callback )
+     remove: function( where, callback )
      {
-      this.collection.remove( where, function (err,doc){ 
+      // delete files here
+      this.collection.remove( where, function (err,data)
+      {
+       console.log("removed:"+sys.inspect(data));
        if(err) throw err;
+       //var callback_count=0;
+       // callback_count++;
+ 
+       var model = this;
+       console.log("doc in delete:"+sys.inspect(data));
+       for(var x in model.fields)
+       {
+        if( model.fields.hasOwnProperty( x))
+        {
+         var field = model.fields[x];
+         //console.log(sys.inspect(field.edit));
+         //console.log(sys.inspect(field.general.title));
+         //console.log(sys.inspect(data.x));
+         if(field.edit.ftype==='file') // delete files
+         {
+          if (x in data )
+          {
+           if('path' in data[x] && data[x].path!='')
+           {
+            var filetodelete=app.files_path+data[x].path;
+              //delete data[x];
+            //callback_count++;
+            path.exists(filetodelete,function(exists)
+            {
+             fs.unlink(filetodelete, function (){
+              // callback_count--;
+              // if(callback_count==0)
+              //  callback(data);
+             });
+            });
+           }
+          }//if x in data
+         }//end of: if ( field.edit.ftype==='file' ) //
+        }//if has own
+       }//for fileds
+       
+       //callback_count--;
+       //if(callback_count==0)
+       // callback(data);
+       
        //sys.puts('sucsess');
        //sys.puts(JSON.stringify(doc) );
       });
       if(callback) callback();
      },
      
-     doupdate: function( where, data2 ,callback )
+     update: function( where, data ,callback )
      {
-      //sys.puts(sys.inspect([where,data2]));
-      this.collection.update(where,data2,function (err,doc){ 
-       if(err) throw err;
-       //sys.puts('sucsess');
-       //sys.puts(JSON.stringify(doc) );
-       if(callback) callback(doc);
+      var that=this;
+      this.preprocess_document(data , false,function (data2)
+      {
+       //sys.puts(sys.inspect([where,data]));
+       that.collection.update(where,data2,function (err,doc)
+       {
+        if(err) throw err;
+        //sys.puts('sucsess');
+        //sys.puts(JSON.stringify(doc) );
+        if(callback) callback(doc);
+       });
       });
- 
      },
-     
-     dolist: function(where , callback )
+ /*  multiupdate: function( where ) { },
+     report:      function( where ) { },
+     search:      function( where ) { },
+     onview:      function( where ) { },   */
+     preprocess_document: function(data , add, callback)
      {
+      var callback_count=0;
+      callback_count++;
+      
+      var model = this;
+      //console.log(sys.inspect(data));
+      
+      if('_id' in data && typeof data['_id']==='string')
+      {
+       if(data['_id']=='')
+       {
+        if(add) delete data['_id'];   
+       }
+       else 
+       {
+        data['_id']=app.ObjectID.createFromHexString(data['_id']); 
+       }
+      }
+        
+      for(var x in model.fields)
+      {
+       if( model.fields.hasOwnProperty( x))
+       {
+        var field = model.fields[x];
+        //console.log(sys.inspect(field.edit));
+        //console.log(sys.inspect(field.general.title));
+        //console.log(sys.inspect(data.x));
+        //every time especialy on update
+
+        if(field.edit.ftype==='select' && 
+           field.edittag.lookup.usetable && 
+           field.edittag.lookup.linkedfield=='_id')
+        {
+         if (x in data && typeof data[x]==='string')
+         {
+          if(data[x]=='')
+          {
+           delete data[x];   
+          }
+          else        
+          {
+           data[x]=app.ObjectID.createFromHexString(data[x]); 
+          }
+         }
+        }
+
+        if(field.edit.ftype==='file')
+        {
+         if (x in data ) //&& typeof data[x]==='object'
+         {
+          var action;
+          action = 'replace';
+          if('action' in data[x]) { action=data[x]['action']; } // keep strategy
+          if(action == 'keep')
+          {
+           if('value' in data[x]) // keep strategy
+           {
+            //console.log("the value="+data[x]['value']);
+            data[x]=JSON.parse(data[x]['value']);
+           }
+          }
+          else if(action == 'delete')
+          {
+           if((x in data) && ('value' in data[x]))// delete file
+           {
+            var value=false;
+            try{value==JSON.parse(data[x]['value']);} catch (e) {console.log(e.stack);}
+            if(value!==false)
+            data[x]=value;
+            if('path' in data[x] && data[x].path!='')
+            {
+             var filetodelete=app.files_path+data[x].path;
+             delete data[x];
+             callback_count++;
+             path.exists(filetodelete,function(exists)
+             {
+              fs.unlink(filetodelete, function (){
+                callback_count--;
+                if(callback_count==0)
+                 callback(data);
+              });
+             });
+            }
+           }// end delete file
+          }
+          else if(action == 'replace')
+          {
+           callback_count++;
+          
+           if((x in data) && ('value' in data[x]))// delete file
+           {
+            var value=false;
+            try{value=JSON.parse(data[x]['value']);} catch (e) {console.log(e.stack);}            
+            if( value!==false && ('path' in value) && value.path!='')
+            {
+             var filetodelete=app.files_path+value.path;
+             //delete data[x];
+             callback_count++;
+             path.exists(filetodelete,function(exists)
+             {
+              //console.log("file raplace - delete : \r\n"+filetodelete+"\r\n"+sys.inspect(value));
+              fs.unlink(filetodelete, function (){
+                callback_count--;
+                if(callback_count==0)
+                 callback(data);
+              });
+             });
+            }
+           }// end delete file
+           
+           //console.log("file raplace: \r\n"+sys.inspect(data)); // instead of value i need to load all data from database.
+           var filepath = data[x]['upload']['path'];
+           //console.log(sys.inspect(data[x]));
+           filepath_basename=filepath.substring(filepath.lastIndexOf('/')+1,filepath.length);
+           
+           var newpath1=app.files_path+model.modelname;
+           var newpath2=app.files_path+model.modelname+'/'+x;
+           
+           var newpath =app.files_path+model.modelname+'/'+x+'/'+filepath_basename;
+           var dbpath =model.modelname+'/'+x+'/'+filepath_basename;
+           
+           //create folders
+           //move file
+           //update data
+           data[x]=
+           {
+            mime:data[x]['upload']['mime'],
+            filename:data[x]['upload']['filename'],
+            path:dbpath
+            /*,meta:data[x]['file']['meta']*/
+           };
+           
+
+           app.mkdir_cached(newpath1, function ()
+           {
+            app.mkdir_cached(newpath2, function ()
+            {
+             fs.rename(filepath, newpath, function (err)
+             {
+              if(err)throw err;
+              callback_count--;
+              if(callback_count==0)
+               callback(data);
+             });
+            });
+           });
+          }//if replace
+         }//if x in data
+        }//end of: if ( field.edit.ftype==='file' ) //
+        
+        if(field.general.ftype==='date')
+        {
+         if (x in data && typeof data[x]==='string' && data[x]!='')
+         {
+          data[x]=app.phpjs.strtotime(data[x]); 
+         }
+         else
+         {
+          delete data[x];   
+         }
+        }
+        
+        // on add
+        if(add)
+        {
+         if ('default_value' in field.add)
+         {
+          data[x]=field.add.default_value;
+         }
+        }
+       }//if
+      }//for
+      callback_count--;
+      if(callback_count==0)
+       callback(data);
+     },
+     select: function(where , callback ) // skip(4).limit(8);
+     {
+    //http://www.slideshare.net/kbanker/mongodb-schema-design-mongony
+     
 	  // http://www.mongodb.org/display/DOCS/Querying
 	  // http://www.mongodb.org/display/DOCS/Queries+and+Cursors
 	  // http://www.mongodb.org/display/DOCS/Advanced+Queries
@@ -917,27 +1279,34 @@ function App()
       //  });
 
      },
-     domultiupdate: function( where )
+     getall: function(where , callback)
      {
-      
-     },
-     doreport: function( where )
+      this.select(where,function (cursor)
+      {
+       cursor.toArray(function(err, items)
+       {
+        callback(items);
+       });
+      });
+     }
+     ,
+     getallaskey: function(where , callback)
      {
-      
-     },
-     dosearch: function( where )
-     {
-      
-     },
-     doview: function( where )
-     {
-      
-     },
-     dosave: function( data )
-     {
-      
-     },
-     doaddpages: function (callback)
+      this.select(where,function (cursor)
+      {
+       cursor.toArray(function(err, items)
+       {
+        var askey={};
+        for(var i=0;i<items.length;i++)
+        {
+         askey[items[i]._id]=items[i];
+        }
+        callback(askey);
+       });
+      });
+     }
+     ,
+     addpages: function (callback)
      {
       var p,tempalte_name,template_function;
       for(p in this.pages)
@@ -947,16 +1316,15 @@ function App()
        page.model=this;
        //if(this.modelname=='t1_organization')  console.log(" addpages page "+p);      
        app.load_templates(page);
-
       }
       if(callback)callback(callback);
      },
-     doaddurls: function (callback)
+     addurls: function (callback)
      {
       var p;
       // adlater calling route before, route after
       for(p in this.pages)
-      {  
+      {
        var pageurl='/'+this.general.urlprefix+this.pages[p].pageurl;
        
        //app.url_routes.push({path:pageurl,code:function(req,res,page,callback){res.writeHead(200, { 'Content-Type': 'text/plain'});res.write('hello world');res.end();}});
@@ -965,7 +1333,15 @@ function App()
 
       if(callback)callback(callback);
      },
-     doinit: function( data )
+     setupfirst: function( data )
+     {
+
+     },
+     setup: function( data )
+     {
+
+     },
+     setuplast: function( data )
      {
       app.prepare_subitems_lists(this);
       var self = this;
@@ -974,148 +1350,7 @@ function App()
       });
       this.addpages();
       this.addurls();
-      
      },
-     dosetupfirst: function( data )
-     {
-
-     },
-     dosetup: function( data )
-     {
-
-     },
-     dosetuplast: function( data )
-     {
-
-      this.init();
-
-     },
-     // end real action functions //////////////
-     // after event functions //////////////
-     afteradd: function( data , callback )
-     {
-      if(callback)callback(data);
-     },
-     afterdel: function( where , callback  )
-     {
-      if(callback)callback(where);
-     },
-     afterupdate: function( where, data , callback  )
-     {
-      if(callback)callback(where,data);
-     },
-     afterlist: function(where , cursor, callback)
-     {
-      if(callback)callback(cursor);
-     },
-     aftermultiupdate: function( where )
-     {
-      
-     },
-     afterreport: function( where )
-     {
-      
-     },
-     aftersearch: function( where )
-     {
-      
-     },
-     afterview: function( where )
-     {
-      
-     },
-     aftersave: function( data )
-     {
-      
-     },
-     afteraddpages: function(callback)
-     {
-      if(callback)callback();
-     },
-     afteraddurls: function(callback)
-     {
-      if(callback)callback();
-     },
-     afterinit: function(callback)
-     {
-      if(callback)callback();
-     },
-     
-     aftersetupfirst: function(callback)
-     {
-      if(callback)callback();
-     },
-     aftersetup: function(callback)
-     {
-      if(callback)callback();
-     },
-     aftersetuplast: function(callback)
-     {
-      if(callback)callback();
-     },
-     // end after event functions //////////////
-     // before event functions //////////////
-     beforeadd: function( data1 , callback )
-     {
-      if(callback)callback(data1);
-     },
-     beforedel: function( where , callback )
-     {
-      if(callback)callback();
-     },
-     beforeupdate: function( where,data,callback )
-     {
-      if(callback)callback(where,data);
-     },
-     beforelist: function(where,callback)
-     {
-      if(callback)callback();
-     },
-     beforemultiupdate: function( where )
-     {
-      
-     },
-     beforereport: function( where )
-     {
-      
-     },
-     beforesearch: function( where )
-     {
-      
-     },
-     beforeview: function( where )
-     {
-      
-     },
-     beforesave: function( data )
-     {
-      
-     },
-     beforeaddpages: function(callback)
-     {
-      if(callback)callback();
-     },
-     beforeaddurls: function(callback)
-     {
-      if(callback)callback();
-     },
-     beforeinit: function(callback)
-     {
-      if(callback)callback();
-     },
-     beforesetupfirst: function(callback)
-     {
-      if(callback)callback();
-     },
-     beforesetup: function(callback)
-     {
-      if(callback)callback();
-     },
-     beforesetuplast: function(callback)
-     {
-      if(callback)callback();
-     },
-     // end before event functions //////////////
      pages:
      {
       list:require('templates/default/list').page.call(this,app,this), 
@@ -1156,7 +1391,7 @@ function App()
     if(this.pages.hasOwnProperty(p) )
     {
      var pageurl='/'+this.pages[p].pageurl;
-     var amatch={page:this.pages[p]}
+     var amatch={page:this.pages[p]};
      if(this.pages[p].urlmatch)
      {
       //sys.puts(this.pages[p].urlmatch+"="+pageurl);
@@ -1193,14 +1428,26 @@ function App()
     var page=newmodule.page.apply(oldpage.pagethis?oldpage.pagethis:app,oldpage.pagearguments?oldpage.pagearguments:[app]);
     app.load_templates(page,function ()
     {
-     app.pages[pagename]=page;
-     for(var i=0;i<app.url_routes.length;i++)
+    
+     app.pages[pagename]=page; // update main page reference
+     
+     for(var i=0;i<app.url_routes.length;i++) // serch routes and update routes
      {
       if(app.url_routes[i].page)
       if(app.url_routes[i].page.pagefilename==oldpage.pagefilename)
       {
        app.url_routes[i].page=page;
-       app.url_routes[i].page=page;
+       /*
+       if(oldpage.urlmatch)
+        delete app.url_routes[i][oldpage.urlmatch];
+       else 
+        delete app.url_routes[i]['path'];
+
+       if(page.urlmatch)
+        app.url_routes[i][page.urlmatch]=page.pageurl;
+       else
+        app.url_routes[i]['path']=page.pageurl;
+        */
        console.log( (new Date).toTimeString() + ' page ' + i + ' reloaded ' + filename );
       }
      }
@@ -1213,3 +1460,7 @@ function App()
 
 var app = new App();
 this.app = app;
+   autoreload.watchrel("httputils.js", function (newmodule)
+   {
+    app.httputils=newmodule;
+   });

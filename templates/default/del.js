@@ -60,7 +60,7 @@ this.page=function(app,model)
              var where={'_id':app.ObjectID.createFromHexString(data['model_del']['_id'])};
              delete data['model_del']['_id'];
              // sys.puts( sys.inspect(where)); 
-             page.model.del(where,function (where ,datawithkey)
+             page.model.remove(where,function (where ,datawithkey)
              {
               //sys.puts( sys.inspect(where)); 
               updateok=true; 
@@ -102,7 +102,7 @@ this.page=function(app,model)
            function ()
            {
              var header= { 'Content-Type': 'text/html'};
-             app.httputils.session_start(req,header);             
+             //app.httputils.session_start(req,header);             
              res.writeHead(200, header);
              //res.write(sys.inspect(   data1 ));        
              page.del.call(page,data1,function(echo){res.write(echo);res.end(); });
