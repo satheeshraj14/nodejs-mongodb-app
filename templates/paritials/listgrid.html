@@ -8,7 +8,8 @@ var fieldname;
 for(fieldname in model.fields)
 {
  field=model.fields[fieldname];
- %><td><%=field.general.title%></td><% 
+ if(field.list.use){
+ %><td><%=field.general.title%></td><% }
 }
 %>
 <%if(!vars.nolinks){%>
@@ -28,7 +29,8 @@ for(fieldname in model.fields)
  field=model.fields[fieldname];
  // show field only if it is avlible for list
 
- //if(field.list.use){
+ if(field.list.use){
+
  %><td><?
   if(row[<%=JSON.stringify(fieldname) %>])
   {
@@ -58,16 +60,14 @@ for(fieldname in model.fields)
   else
    echo +="&nbsp;";
  ?></td><% 
- //}
 
+ }
 }
 %>
 <%if(!vars.nolinks){%>
 <td>
 &nbsp; 
 <a href="/<%=model.general.urlprefix+model.pages.edit.pageurl%>?_id=<?=row['_id'].toHexString()?>">edit</a>
-&nbsp; 
-<a href="/<%=model.general.urlprefix+model.pages.view.pageurl%>?_id=<?=row['_id'].toHexString()?>">view</a>
 &nbsp; 
 <a href="/<%=model.general.urlprefix+model.pages.del.pageurl%>?_id=<?=row['_id'].toHexString()?>">delete</a>
 &nbsp; 

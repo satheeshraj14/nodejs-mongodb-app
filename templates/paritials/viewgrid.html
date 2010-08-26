@@ -9,12 +9,13 @@ var fieldname;
 for(fieldname in model.fields)
 {
  field=model.fields[fieldname];
+ if(field.view.use) { 
  %>
  <tr>
  <td><%=field.general.title%></td>
  <td><?=row[<%=JSON.stringify(fieldname) %>]<% if(fieldname=='_id') echo+='.toHexString()'%> || '' ?></td> 
  </tr>
- <% 
+ <% }
 }
 %>
 <tr><td></td><td><a href="/<%=model.general.urlprefix+model.pages.list.pageurl%>">back to list</a></td></tr>

@@ -15,7 +15,7 @@ if(process.argv[3])
 }
 else
 {
- var modules=[  require('module_mainpage'), ]; // include  basic definision of a model and a filed in a model
+ var modules=[  require('module_mainpage') ]; // include  basic definision of a model and a filed in a model
 }
 console.log("end require modules");
 

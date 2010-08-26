@@ -67,9 +67,7 @@ this.page=function(app,model)
           var data1={'page':page, 'app':app, 'req':req, }         
           app.load_data(
            {
-
             'add': {  model:page.model                 , column_set:'edit'  , where:null            , load_items:false,  load_subitems:true    },
-
            }
           ,
            data1
